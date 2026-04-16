@@ -156,6 +156,34 @@ Frontend runs at `http://localhost:5173`.
 	 - `Authorization: Bearer <token>`
 5. Test tasks, posts, comments, and profile analytics endpoints.
 
+## Deploy on Vercel (frontend + API)
+
+This repository includes a Vercel configuration at `vercel.json` and serverless API entrypoint at `api/index.js`.
+
+### 1) Import project in Vercel
+
+- Import the repository as a Vercel project.
+- Keep the root directory as repository root (do not set `client` as root for this mode).
+
+### 2) Configure environment variables in Vercel
+
+Set these for Production (and Preview if needed):
+
+- `DATABASE_URL` = your hosted PostgreSQL connection string
+- `JWT_SECRET` = strong random secret
+- `JWT_EXPIRES_IN` = `7d`
+- `CLIENT_ORIGIN` = your Vercel frontend URL (for example `https://your-project.vercel.app`)
+- `NODE_ENV` = `production`
+
+If you keep frontend and API on same Vercel project, `VITE_API_BASE_URL` is optional because frontend defaults to `/api` in production.
+
+### 3) Deploy
+
+- Trigger a new deployment from Vercel dashboard.
+- After deployment, verify:
+	- `https://<your-domain>/` (frontend)
+	- `https://<your-domain>/api/health` (backend)
+
 ## Sprint status
 
 - Sprint 1: Implemented in the same full-stack pipeline and static legacy files preserved in root.
