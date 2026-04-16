@@ -1,0 +1,92 @@
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
+
+const categories = ["All", "Web Development", "AI", "Cloud", "Security", "Mobile", "DevOps"];
+
+export default function TechNewsPage() {
+  const [category, setCategory] = useState("All");
+  const [posts, setPosts] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [error, setError] = useState("");
+
+  async function fetchNews(selectedCategory = category) {
+    try {
+      const params = selectedCategory === "All" ? {} : { category: selectedCategory };
+      const [postsResponse, trendingResponse] = await Promise.all([
+        api.get("/posts", { params }),
+        api.get("/posts/trending"),
+      ]);
+
+      setPosts(postsResponse.data.posts || []);
+      setTrending(trendingResponse.data.posts || []);
+      setError("");
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to load tech news");
+    }
+  }
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  function handleCategoryChange(nextCategory) {
+    setCategory(nextCategory);
+    fetchNews(nextCategory);
+  }
+
+  return (
+    <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] fade-in">
+      <div className="space-y-4">
+        <article className="card">
+          <h1 className="text-2xl font-semibold">Tech News Feed</h1>
+          <p className="text-sm text-ink/70 mt-1">Sprint 1 category-filtered feed powered by the Sprint 2 discussion backend.</p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {categories.map((item) => (
+              <button
+                key={item}
+                className={item === category ? "btn-primary" : "btn-secondary"}
+                onClick={() => handleCategoryChange(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </article>
+
+        <div className="space-y-3">
+          {posts.map((post) => (
+            <article key={post.id} className="card">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold">{post.title}</h2>
+                <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">{post.category}</span>
+              </div>
+              <p className="text-sm text-ink/80 mt-2">{post.content}</p>
+              <p className="text-xs text-ink/60 mt-2">By {post.author_name}</p>
+            </article>
+          ))}
+          {posts.length === 0 && <p className="text-sm text-ink/60">No posts in this category yet.</p>}
+        </div>
+      </div>
+
+      <aside className="card h-fit">
+        <h2 className="text-lg font-semibold">Trending Discussions</h2>
+        <p className="text-sm text-ink/70 mt-1">Top discussions by score and engagement.</p>
+
+        <div className="mt-4 space-y-3">
+          {trending.map((post) => (
+            <div key={post.id} className="rounded-xl border border-ink/10 p-3 bg-white">
+              <p className="text-sm font-medium">{post.title}</p>
+              <p className="text-xs text-ink/60 mt-1">
+                Score: {post.score} | Comments: {post.comment_count}
+              </p>
+            </div>
+          ))}
+          {trending.length === 0 && <p className="text-sm text-ink/60">No trending data yet.</p>}
+        </div>
+
+        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+      </aside>
+    </section>
+  );
+}
