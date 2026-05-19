@@ -18,8 +18,10 @@ export function AuthProvider({ children }) {
       try {
         const response = await api.get("/auth/me");
         setUser(response.data.user);
+        localStorage.setItem("acf_session", JSON.stringify(response.data.user));
       } catch (error) {
         localStorage.removeItem("acf_token");
+        localStorage.removeItem("acf_session");
         setUser(null);
       } finally {
         setLoading(false);
@@ -33,16 +35,19 @@ export function AuthProvider({ children }) {
     const response = await api.post("/auth/login", { email, password });
     localStorage.setItem("acf_token", response.data.token);
     setUser(response.data.user);
+    localStorage.setItem("acf_session", JSON.stringify(response.data.user));
   }
 
   async function register(payload) {
     const response = await api.post("/auth/register", payload);
     localStorage.setItem("acf_token", response.data.token);
     setUser(response.data.user);
+    localStorage.setItem("acf_session", JSON.stringify(response.data.user));
   }
 
   function logout() {
     localStorage.removeItem("acf_token");
+    localStorage.removeItem("acf_session");
     setUser(null);
   }
 

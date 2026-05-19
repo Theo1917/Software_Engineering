@@ -4,13 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#111827",
-        ember: "#f97316",
-        mint: "#14b8a6",
-        sunrise: "#f59e0b",
+        ink: "#E6EDF3",
+        ember: "#FF3366",
+        mint: "#00FF66",
+        sunrise: "#8B949E",
+        obsidian: "#0D1117",
+        surface: "#161B22",
+        muted: "#8B949E",
+        text: "#E6EDF3",
+        neon: "#00FF66",
+        danger: "#FF3366",
       },
       boxShadow: {
-        card: "0 14px 36px rgba(17, 24, 39, 0.12)",
+        card: "0 18px 42px rgba(0, 0, 0, 0.32)",
       },
     },
   },

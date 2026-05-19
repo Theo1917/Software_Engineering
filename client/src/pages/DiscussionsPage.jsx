@@ -9,34 +9,73 @@ const initialPost = {
   tags: "",
 };
 
+const categories = ["Web Development", "AI", "Cloud", "Security", "Mobile", "DevOps"];
+
 export default function DiscussionsPage() {
   const { isAuthenticated } = useAuth();
-
   const [posts, setPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [recommendedPosts, setRecommendedPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
+  const [thread, setThread] = useState([]);
   const [form, setForm] = useState(initialPost);
+  const [postComment, setPostComment] = useState("");
+  const [replyText, setReplyText] = useState("");
+  const [activeReplyId, setActiveReplyId] = useState(null);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
-  async function fetchPosts() {
+  useEffect(() => {
+    fetchPosts();
+    fetchDiscoveryLists();
+  }, []);
+
+  async function fetchPosts(nextSearch = search) {
     try {
-      const response = await api.get("/posts");
-      setPosts(response.data.posts);
+      const params = {};
+      if (nextSearch.trim()) {
+        params.q = nextSearch.trim();
+      }
+
+      const response = await api.get("/posts", { params });
+      setPosts(response.data.posts || []);
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to load discussions");
     }
   }
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  async function fetchDiscoveryLists() {
+    if (!isAuthenticated) {
+      setSavedPosts([]);
+      setRecommendedPosts([]);
+      return;
+    }
+
+    try {
+      const [savedResponse, recommendedResponse] = await Promise.all([
+        api.get("/posts/saved"),
+        api.get("/posts/recommended"),
+      ]);
+
+      setSavedPosts(savedResponse.data.posts || []);
+      setRecommendedPosts(recommendedResponse.data.posts || []);
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to load saved or recommended posts");
+    }
+  }
 
   async function viewPost(postId) {
     try {
-      const response = await api.get(`/posts/${postId}`);
-      setSelectedPost(response.data.post);
-      setComments(response.data.comments);
+      const [postResponse, commentsResponse] = await Promise.all([
+        api.get(`/posts/${postId}`),
+        api.get(`/comments/posts/${postId}/comments`),
+      ]);
+
+      setSelectedPost(postResponse.data.post);
+      setThread(commentsResponse.data.comments || []);
+      setActiveReplyId(null);
+      setReplyText("");
+      setPostComment("");
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to load post");
     }
@@ -44,6 +83,7 @@ export default function DiscussionsPage() {
 
   async function handleCreatePost(event) {
     event.preventDefault();
+    setError("");
 
     try {
       await api.post("/posts", {
@@ -57,7 +97,8 @@ export default function DiscussionsPage() {
       });
 
       setForm(initialPost);
-      fetchPosts();
+      await fetchPosts();
+      await fetchDiscoveryLists();
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to create post");
     }
@@ -66,34 +107,109 @@ export default function DiscussionsPage() {
   async function handleVote(postId, type) {
     try {
       await api.post(`/posts/${postId}/vote`, { type });
-      fetchPosts();
-      if (selectedPost && selectedPost.id === postId) {
-        viewPost(postId);
+      await fetchPosts();
+      if (selectedPost?.id === postId) {
+        await viewPost(postId);
       }
+      await fetchDiscoveryLists();
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to vote");
     }
   }
 
-  async function handleAddComment(event) {
+  async function toggleSavedPost(postId) {
+    try {
+      await api.post(`/posts/${postId}/save`);
+      await fetchDiscoveryLists();
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to update saved posts");
+    }
+  }
+
+  async function handleCommentSubmit(event) {
     event.preventDefault();
-    if (!selectedPost) return;
+    if (!selectedPost || !postComment.trim()) return;
 
     try {
-      await api.post(`/posts/${selectedPost.id}/comments`, { content: newComment });
-      setNewComment("");
-      viewPost(selectedPost.id);
+      await api.post(`/comments/posts/${selectedPost.id}/comments`, {
+        content: postComment,
+      });
+      setPostComment("");
+      await viewPost(selectedPost.id);
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to add comment");
     }
   }
 
+  async function handleReplySubmit(event, parentCommentId) {
+    event.preventDefault();
+    if (!selectedPost || !replyText.trim()) return;
+
+    try {
+      await api.post(`/comments/posts/${selectedPost.id}/comments`, {
+        content: replyText,
+        parentCommentId,
+      });
+      setReplyText("");
+      setActiveReplyId(null);
+      await viewPost(selectedPost.id);
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to add reply");
+    }
+  }
+
+  async function handleCommentVote(commentId, voteType) {
+    try {
+      await api.post(`/comments/comments/${commentId}/vote`, { voteType });
+      if (selectedPost) {
+        await viewPost(selectedPost.id);
+      }
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to vote on comment");
+    }
+  }
+
+  const savedPostIds = new Set(savedPosts.map((post) => post.id));
+
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr] fade-in">
+    <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] fade-in">
       <div className="space-y-4">
+        <div className="card space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Discover Posts</h2>
+              <p className="text-sm text-text/60 mt-1">Search posts by title, content, or tags.</p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setSearch("");
+                fetchPosts("");
+              }}
+            >
+              Reset
+            </button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <input
+              className="input"
+              placeholder="Search posts"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <button type="button" className="btn-primary" onClick={fetchPosts}>
+              Search
+            </button>
+          </div>
+        </div>
+
         {isAuthenticated && (
           <form onSubmit={handleCreatePost} className="card space-y-3">
-            <h2 className="text-lg font-semibold">Create Discussion</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Create Post</h2>
+              <span className="text-xs uppercase tracking-wide text-muted">News feed</span>
+            </div>
             <input
               className="input"
               placeholder="Title"
@@ -102,20 +218,25 @@ export default function DiscussionsPage() {
               required
             />
             <textarea
-              className="input min-h-24"
+              className="input min-h-28"
               placeholder="Content"
               value={form.content}
               onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
               required
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <input
+              <select
                 className="input"
-                placeholder="Category"
                 value={form.category}
                 onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
                 required
-              />
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
               <input
                 className="input"
                 placeholder="Tags (comma separated)"
@@ -130,14 +251,17 @@ export default function DiscussionsPage() {
         <div className="space-y-3">
           {posts.map((post) => (
             <article key={post.id} className="card">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold">{post.title}</h3>
-                <span className="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-1">{post.category}</span>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold">{post.title}</h3>
+                  <p className="text-xs text-text/60 mt-1">By {post.author_name}</p>
+                </div>
+                <span className="rounded-full bg-danger/15 px-2 py-1 text-xs text-danger">{post.category}</span>
               </div>
-              <p className="text-sm text-ink/75 mt-2 line-clamp-2">{post.content}</p>
-              <p className="text-xs text-ink/60 mt-2">By {post.author_name}</p>
 
-              <div className="mt-3 flex flex-wrap gap-2 items-center">
+              <p className="mt-3 text-sm text-text/75 line-clamp-3">{post.content}</p>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button className="btn-secondary" onClick={() => viewPost(post.id)}>
                   Open Thread
                 </button>
@@ -145,49 +269,279 @@ export default function DiscussionsPage() {
                   <>
                     <button className="btn-secondary" onClick={() => handleVote(post.id, "UP")}>Upvote</button>
                     <button className="btn-secondary" onClick={() => handleVote(post.id, "DOWN")}>Downvote</button>
+                    <button className="btn-secondary" onClick={() => toggleSavedPost(post.id)}>
+                      {savedPostIds.has(post.id) ? "Unsave" : "Save"}
+                    </button>
                   </>
                 )}
-                <span className="text-xs text-ink/60">Score: {post.score}</span>
+                <span className="text-xs text-text/60">Score: {post.score}</span>
               </div>
             </article>
           ))}
         </div>
+
+        {isAuthenticated && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="card space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">Recommended Posts</h2>
+                <span className="text-xs text-muted">{recommendedPosts.length}</span>
+              </div>
+              {recommendedPosts.length === 0 ? (
+                <p className="text-sm text-text/60">No recommendations yet.</p>
+              ) : (
+                recommendedPosts.slice(0, 4).map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    className="w-full rounded-2xl border border-white/10 bg-surface/80 p-3 text-left hover:border-neon/30"
+                    onClick={() => viewPost(post.id)}
+                  >
+                    <p className="font-medium">{post.title}</p>
+                    <p className="text-xs text-text/60 mt-1">Score {post.score} | Match {post.match_score ?? 0}</p>
+                  </button>
+                ))
+              )}
+            </article>
+
+            <article className="card space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">Saved Posts</h2>
+                <span className="text-xs text-muted">{savedPosts.length}</span>
+              </div>
+              {savedPosts.length === 0 ? (
+                <p className="text-sm text-text/60">No saved posts yet.</p>
+              ) : (
+                savedPosts.slice(0, 4).map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    className="w-full rounded-2xl border border-white/10 bg-surface/80 p-3 text-left hover:border-neon/30"
+                    onClick={() => viewPost(post.id)}
+                  >
+                    <p className="font-medium">{post.title}</p>
+                    <p className="text-xs text-text/60 mt-1">By {post.author_name}</p>
+                  </button>
+                ))
+              )}
+            </article>
+          </div>
+        )}
       </div>
 
-      <aside className="card h-fit">
+      <aside className="card h-fit space-y-4">
         <h2 className="text-lg font-semibold">Thread Detail</h2>
+
         {!selectedPost ? (
-          <p className="text-sm text-ink/70 mt-3">Select a post to read comments.</p>
+          <p className="text-sm text-text/70">Select a post to read and reply.</p>
         ) : (
-          <div className="mt-3 space-y-3">
-            <h3 className="font-semibold">{selectedPost.title}</h3>
-            <p className="text-sm text-ink/80">{selectedPost.content}</p>
-            <div className="space-y-2 pt-2 border-t border-ink/10">
-              {comments.map((comment) => (
-                <div key={comment.id} className="rounded-xl bg-gray-50 border border-ink/10 p-3">
-                  <p className="text-sm">{comment.content}</p>
-                  <p className="text-xs text-ink/60 mt-1">{comment.author_name}</p>
-                </div>
-              ))}
+          <>
+            <div className="rounded-2xl border border-white/10 bg-surface/80 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-base font-semibold">{selectedPost.title}</h3>
+                <span className="text-xs text-text/60">Score {selectedPost.score}</span>
+              </div>
+              <p className="mt-2 text-sm text-text/80">{selectedPost.content}</p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Comments</h3>
+              {thread.length === 0 ? (
+                <p className="text-sm text-text/60">No comments yet.</p>
+              ) : (
+                thread.map((comment) => (
+                  <CommentNode
+                    key={comment.id}
+                    comment={comment}
+                    depth={0}
+                    activeReplyId={activeReplyId}
+                    setActiveReplyId={setActiveReplyId}
+                    replyText={replyText}
+                    setReplyText={setReplyText}
+                    onReplySubmit={handleReplySubmit}
+                    onVote={handleCommentVote}
+                  />
+                ))
+              )}
             </div>
 
             {isAuthenticated && (
-              <form onSubmit={handleAddComment} className="space-y-2">
+              <form onSubmit={handleCommentSubmit} className="space-y-2 border-t border-white/10 pt-4">
                 <textarea
-                  className="input min-h-20"
+                  className="input min-h-24"
                   placeholder="Add comment"
-                  value={newComment}
-                  onChange={(event) => setNewComment(event.target.value)}
+                  value={postComment}
+                  onChange={(event) => setPostComment(event.target.value)}
                   required
                 />
-                <button className="btn-primary">Comment</button>
+                <button className="btn-primary">Comment on Post</button>
               </form>
             )}
-          </div>
+          </>
         )}
 
-        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        {isAuthenticated && (
+          <div className="space-y-4 border-t border-white/10 pt-4">
+            <article className="rounded-2xl border border-white/10 bg-surface/80 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Saved Posts</h3>
+                <span className="text-xs text-muted">{savedPosts.length}</span>
+              </div>
+              {savedPosts.length === 0 ? (
+                <p className="text-sm text-text/60">Saved posts will appear here.</p>
+              ) : (
+                savedPosts.slice(0, 3).map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    className="w-full rounded-xl border border-white/10 p-3 text-left hover:border-neon/30"
+                    onClick={() => viewPost(post.id)}
+                  >
+                    <p className="text-sm font-medium">{post.title}</p>
+                    <p className="text-xs text-text/60 mt-1">By {post.author_name}</p>
+                  </button>
+                ))
+              )}
+            </article>
+          </div>
+        )}
       </aside>
     </section>
+  );
+}
+
+function CommentNode({
+  comment,
+  depth,
+  activeReplyId,
+  setActiveReplyId,
+  replyText,
+  setReplyText,
+  onReplySubmit,
+  onVote,
+}) {
+  const score = Number(comment.upvotes || 0) - Number(comment.downvotes || 0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Determine background colors based on depth for visual hierarchy
+  const getDepthStyles = () => {
+    const baseIndent = depth * 6; // 6px per depth level
+    const bgColors = [
+      "bg-surface/80",           // depth 0: original color
+      "bg-slate-800/60",         // depth 1: darker
+      "bg-slate-800/40",         // depth 2: even darker
+      "bg-slate-800/20",         // depth 3+: very subtle
+    ];
+    const borderColors = [
+      "border-white/10",         // depth 0
+      "border-white/8",          // depth 1
+      "border-white/5",          // depth 2
+      "border-white/5",          // depth 3+
+    ];
+    
+    const bgColor = bgColors[Math.min(depth, 3)];
+    const borderColor = borderColors[Math.min(depth, 3)];
+    
+    return { baseIndent, bgColor, borderColor };
+  };
+  
+  const { baseIndent, bgColor, borderColor } = getDepthStyles();
+  const hasReplies = Array.isArray(comment.replies) && comment.replies.length > 0;
+
+  return (
+    <div style={{ marginLeft: `${baseIndent}px` }} className="space-y-2">
+      <article className={`rounded-lg border ${borderColor} ${bgColor} p-3 transition-all hover:border-white/15`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-text">{comment.author_name}</p>
+              <p className="text-xs text-muted">Rep {comment.reputation}</p>
+            </div>
+            
+            {/* Reply-to context */}
+            {comment.reply_to_author_name && (
+              <p className="text-xs text-cyan-400/70 mt-1">
+                → replying to <span className="font-medium">{comment.reply_to_author_name}</span>
+              </p>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {hasReplies && (
+              <button
+                type="button"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="text-xs px-2 py-1 rounded hover:bg-white/10 text-muted transition"
+              >
+                {isCollapsed ? `▶ ${comment.replies.length}` : `▼ ${comment.replies.length}`}
+              </button>
+            )}
+            <span className="text-xs text-muted">Score {score}</span>
+          </div>
+        </div>
+
+        <p className="mt-2 text-sm text-text/85 leading-relaxed">{comment.content}</p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <button className="btn-secondary text-xs px-2 py-1" onClick={() => onVote(comment.id, "UP")}>
+            👍 Upvote
+          </button>
+          <button className="btn-secondary text-xs px-2 py-1" onClick={() => onVote(comment.id, "DOWN")}>
+            👎 Downvote
+          </button>
+          <button
+            className="btn-secondary text-xs px-2 py-1"
+            onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
+          >
+            💬 Reply
+          </button>
+        </div>
+      </article>
+
+      {activeReplyId === comment.id && (
+        <form onSubmit={(event) => onReplySubmit(event, comment.id)} className="space-y-2 border-l-2 border-cyan-500/30 pl-3">
+          <div className="text-xs text-cyan-400/70 font-medium">Replying to {comment.author_name}</div>
+          <textarea
+            className="input min-h-20 text-xs"
+            placeholder="Write a reply"
+            value={replyText}
+            onChange={(event) => setReplyText(event.target.value)}
+            required
+          />
+          <div className="flex gap-2">
+            <button className="btn-primary text-xs px-3 py-1" type="submit">
+              Post Reply
+            </button>
+            <button
+              className="btn-secondary text-xs px-3 py-1"
+              type="button"
+              onClick={() => setActiveReplyId(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {hasReplies && !isCollapsed && (
+        <div className="space-y-2 mt-2">
+          {comment.replies.map((reply) => (
+            <CommentNode
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              activeReplyId={activeReplyId}
+              setActiveReplyId={setActiveReplyId}
+              replyText={replyText}
+              setReplyText={setReplyText}
+              onReplySubmit={onReplySubmit}
+              onVote={onVote}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

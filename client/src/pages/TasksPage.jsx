@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,27 +10,36 @@ const initialTaskForm = {
   difficulty: "INTERMEDIATE",
   budget: "",
   deadline: "",
+  teamId: null,
 };
 
 export default function TasksPage() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [myProposals, setMyProposals] = useState([]);
+  const [savedTasks, setSavedTasks] = useState([]);
+  const [recommendedTasks, setRecommendedTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialTaskForm);
   const [filters, setFilters] = useState({ skill: "", difficulty: "", minBudget: "", maxBudget: "" });
+  const [search, setSearch] = useState("");
+  const [teams, setTeams] = useState([]);
 
-  async function fetchTasks() {
+  async function fetchTasks(nextFilters = filters, nextSearch = search) {
     setLoading(true);
     setError("");
 
     try {
       const params = {};
-      Object.entries(filters).forEach(([key, value]) => {
+      Object.entries(nextFilters).forEach(([key, value]) => {
         if (value) params[key] = value;
       });
+      if (nextSearch.trim()) {
+        params.q = nextSearch.trim();
+      }
 
       const response = await api.get("/tasks", { params });
       setTasks(response.data.tasks);
@@ -43,6 +52,10 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
+    fetchDiscoveryLists();
+    if (isAuthenticated) {
+      fetchUserTeams();
+    }
   }, []);
 
   useEffect(() => {
@@ -63,12 +76,50 @@ export default function TasksPage() {
     fetchMyProposals();
   }, [isAuthenticated]);
 
+  async function fetchDiscoveryLists() {
+    if (!isAuthenticated) {
+      setSavedTasks([]);
+      setRecommendedTasks([]);
+      return;
+    }
+
+    try {
+      const [savedResponse, recommendedResponse] = await Promise.all([
+        api.get("/tasks/saved"),
+        api.get("/tasks/recommended"),
+      ]);
+
+      setSavedTasks(savedResponse.data.tasks || []);
+      setRecommendedTasks(recommendedResponse.data.tasks || []);
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to load saved or recommended tasks");
+    }
+  }
+
+  async function fetchUserTeams() {
+    try {
+      const response = await api.get("/teams");
+      setTeams(response.data.teams || []);
+    } catch (apiError) {
+      console.error("Unable to load teams:", apiError);
+    }
+  }
+
   async function openTask(taskId) {
     try {
       const response = await api.get(`/tasks/${taskId}`);
       setSelectedTask(response.data.task);
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to load task detail");
+    }
+  }
+
+  async function toggleSavedTask(taskId) {
+    try {
+      await api.post(`/tasks/${taskId}/save`);
+      await fetchDiscoveryLists();
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Unable to update saved tasks");
     }
   }
 
@@ -87,10 +138,12 @@ export default function TasksPage() {
         difficulty: form.difficulty,
         budget: Number(form.budget),
         deadline: form.deadline,
+        teamId: form.teamId ? Number(form.teamId) : null,
       });
 
       setForm(initialTaskForm);
       fetchTasks();
+      fetchDiscoveryLists();
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to create task");
     }
@@ -117,13 +170,21 @@ export default function TasksPage() {
     }
   }
 
+  const savedTaskIds = new Set(savedTasks.map((savedTask) => savedTask.id));
+
   return (
     <section className="space-y-6 fade-in">
       <div className="card">
         <h1 className="text-2xl font-semibold">Task Board</h1>
-        <p className="text-sm text-ink/70 mt-1">Open opportunities from the community.</p>
+        <p className="text-sm text-text/70 mt-1">Open opportunities from the community.</p>
 
-        <div className="grid gap-2 sm:grid-cols-4 mt-4">
+        <div className="grid gap-2 sm:grid-cols-5 mt-4">
+          <input
+            className="input sm:col-span-2"
+            placeholder="Search title, description, or tech stack"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
           <input
             className="input"
             placeholder="Skill"
@@ -161,6 +222,17 @@ export default function TasksPage() {
         <button className="btn-secondary mt-3" onClick={fetchTasks}>
           Apply Filters
         </button>
+        <button
+          className="btn-secondary mt-3 ml-2"
+          onClick={() => {
+            const clearedFilters = { skill: "", difficulty: "", minBudget: "", maxBudget: "" };
+            setSearch("");
+            setFilters(clearedFilters);
+            fetchTasks(clearedFilters, "");
+          }}
+        >
+          Reset
+        </button>
       </div>
 
       {isAuthenticated && (
@@ -186,7 +258,7 @@ export default function TasksPage() {
             value={form.techStack}
             onChange={(event) => setForm((prev) => ({ ...prev, techStack: event.target.value }))}
           />
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <select
               className="input"
               value={form.difficulty}
@@ -212,6 +284,18 @@ export default function TasksPage() {
               onChange={(event) => setForm((prev) => ({ ...prev, deadline: event.target.value }))}
               required
             />
+            <select
+              className="input"
+              value={form.teamId || ""}
+              onChange={(event) => setForm((prev) => ({ ...prev, teamId: event.target.value || null }))}
+            >
+              <option value="">Personal Task</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button className="btn-primary" type="submit">
@@ -220,7 +304,7 @@ export default function TasksPage() {
         </form>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {isAuthenticated && (
         <article className="card">
@@ -243,16 +327,21 @@ export default function TasksPage() {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4">
         {loading ? (
-          <p className="text-ink/70">Loading tasks...</p>
+          <p className="text-text/70">Loading tasks...</p>
         ) : (
           tasks.map((task) => (
             <article key={task.id} className="card">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-semibold text-lg">{task.title}</h3>
-                <span className="px-3 py-1 rounded-full bg-mint/15 text-mint text-xs">{task.status}</span>
+                <div>
+                  <h3 className="font-semibold text-lg">{task.title}</h3>
+                  {task.team_name && (
+                    <p className="text-xs text-cyan-400 mt-1">👥 Team: {task.team_name}</p>
+                  )}
+                </div>
+                <span className="px-3 py-1 rounded-full bg-neon/15 text-neon text-xs">{task.status}</span>
               </div>
-              <p className="text-sm text-ink/80 mt-2">{task.description}</p>
-              <p className="text-xs text-ink/60 mt-3">
+              <p className="text-sm text-text/80 mt-2">{task.description}</p>
+              <p className="text-xs text-text/60 mt-3">
                 Creator: {task.creator_name} | Difficulty: {task.difficulty} | Budget: Rs {task.budget}
               </p>
 
@@ -265,13 +354,18 @@ export default function TasksPage() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button className="btn-secondary" onClick={() => openTask(task.id)}>
+                <button className="btn-secondary" onClick={() => navigate(`/task/${task.id}`)}>
                   View Detail
                 </button>
                 {isAuthenticated ? (
-                  <button className="btn-primary" onClick={() => handleApply(task.id)}>
-                    Submit Proposal
-                  </button>
+                  <>
+                    <button className="btn-primary" onClick={() => handleApply(task.id)}>
+                      Submit Proposal
+                    </button>
+                    <button className="btn-secondary" onClick={() => toggleSavedTask(task.id)}>
+                      {savedTaskIds.has(task.id) ? "Unsave" : "Save Task"}
+                    </button>
+                  </>
                 ) : (
                   <Link className="btn-secondary" to="/login">
                     Login to Apply
@@ -286,12 +380,12 @@ export default function TasksPage() {
         <aside className="card h-fit">
           <h2 className="text-lg font-semibold">Task Detail Panel</h2>
           {!selectedTask ? (
-            <p className="text-sm text-ink/70 mt-3">Select a task to view complete details.</p>
+            <p className="text-sm text-text/70 mt-3">Select a task to view complete details.</p>
           ) : (
             <div className="mt-3 space-y-2">
               <h3 className="font-semibold">{selectedTask.title}</h3>
-              <p className="text-sm text-ink/80">{selectedTask.description}</p>
-              <p className="text-xs text-ink/60">
+              <p className="text-sm text-text/80">{selectedTask.description}</p>
+              <p className="text-xs text-text/60">
                 Difficulty: {selectedTask.difficulty} | Budget: Rs {selectedTask.budget} | Deadline: {selectedTask.deadline}
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
@@ -300,6 +394,58 @@ export default function TasksPage() {
                     {skill}
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {isAuthenticated && (
+            <div className="mt-6 space-y-4 border-t border-white/10 pt-4">
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Recommended Tasks</h3>
+                  <span className="text-xs text-muted">{recommendedTasks.length}</span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {recommendedTasks.length === 0 ? (
+                    <p className="text-sm text-text/60">No recommendations yet.</p>
+                  ) : (
+                    recommendedTasks.map((task) => (
+                      <button
+                        key={task.id}
+                        type="button"
+                        className="w-full rounded-xl border border-white/10 bg-surface/80 p-3 text-left hover:border-neon/30"
+                        onClick={() => openTask(task.id)}
+                      >
+                        <p className="text-sm font-medium">{task.title}</p>
+                        <p className="text-xs text-text/60 mt-1">Match score: {task.match_score ?? 0}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Saved Tasks</h3>
+                  <span className="text-xs text-muted">{savedTasks.length}</span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {savedTasks.length === 0 ? (
+                    <p className="text-sm text-text/60">No saved tasks yet.</p>
+                  ) : (
+                    savedTasks.map((task) => (
+                      <button
+                        key={task.id}
+                        type="button"
+                        className="w-full rounded-xl border border-white/10 bg-surface/80 p-3 text-left hover:border-neon/30"
+                        onClick={() => openTask(task.id)}
+                      >
+                        <p className="text-sm font-medium">{task.title}</p>
+                        <p className="text-xs text-text/60 mt-1">Rs {task.budget} | {task.status}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}

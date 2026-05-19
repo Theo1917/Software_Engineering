@@ -39,7 +39,7 @@ export default function TechNewsPage() {
       <div className="space-y-4">
         <article className="card">
           <h1 className="text-2xl font-semibold">Tech News Feed</h1>
-          <p className="text-sm text-ink/70 mt-1">Sprint 1 category-filtered feed powered by the Sprint 2 discussion backend.</p>
+          <p className="text-sm text-text/70 mt-1">Sprint 1 category-filtered feed powered by the Sprint 2 discussion backend.</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {categories.map((item) => (
@@ -59,33 +59,33 @@ export default function TechNewsPage() {
             <article key={post.id} className="card">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">{post.title}</h2>
-                <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">{post.category}</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-danger/15 text-danger">{post.category}</span>
               </div>
-              <p className="text-sm text-ink/80 mt-2">{post.content}</p>
-              <p className="text-xs text-ink/60 mt-2">By {post.author_name}</p>
+              <p className="text-sm text-text/80 mt-2">{post.content}</p>
+              <p className="text-xs text-text/60 mt-2">By {post.author_name}</p>
             </article>
           ))}
-          {posts.length === 0 && <p className="text-sm text-ink/60">No posts in this category yet.</p>}
+          {posts.length === 0 && <p className="text-sm text-text/60">No posts in this category yet.</p>}
         </div>
       </div>
 
       <aside className="card h-fit">
         <h2 className="text-lg font-semibold">Trending Discussions</h2>
-        <p className="text-sm text-ink/70 mt-1">Top discussions by score and engagement.</p>
+        <p className="text-sm text-text/70 mt-1">Top discussions by score and engagement.</p>
 
         <div className="mt-4 space-y-3">
           {trending.map((post) => (
-            <div key={post.id} className="rounded-xl border border-ink/10 p-3 bg-white">
+            <div key={post.id} className="rounded-xl border border-white/10 p-3 bg-surface/80">
               <p className="text-sm font-medium">{post.title}</p>
-              <p className="text-xs text-ink/60 mt-1">
+              <p className="text-xs text-text/60 mt-1">
                 Score: {post.score} | Comments: {post.comment_count}
               </p>
             </div>
           ))}
-          {trending.length === 0 && <p className="text-sm text-ink/60">No trending data yet.</p>}
+          {trending.length === 0 && <p className="text-sm text-text/60">No trending data yet.</p>}
         </div>
 
-        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+        {error && <p className="text-sm text-danger mt-3">{error}</p>}
       </aside>
     </section>
   );

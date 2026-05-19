@@ -1,8 +1,10 @@
 import { pool } from "../config/db.js";
+import { createNotification } from "./notifications.controller.js";
+import { updateUserAnalytics } from "./analytics.controller.js";
 
 export async function listPosts(req, res, next) {
   try {
-    const { category } = req.query;
+    const { category, q } = req.query;
 
     const params = [];
     let whereClause = "";
@@ -10,6 +12,16 @@ export async function listPosts(req, res, next) {
     if (category) {
       params.push(category);
       whereClause = `WHERE p.category = $${params.length}`;
+    }
+
+    if (q) {
+      params.push(`%${q}%`);
+      const queryClause = `(
+        p.title ILIKE $${params.length}
+        OR p.content ILIKE $${params.length}
+        OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $${params.length})
+      )`;
+      whereClause = whereClause ? `${whereClause} AND ${queryClause}` : `WHERE ${queryClause}`;
     }
 
     const result = await pool.query(
@@ -25,6 +37,94 @@ export async function listPosts(req, res, next) {
     );
 
     return res.json({ posts: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function recommendedPosts(req, res, next) {
+  try {
+    const userResult = await pool.query("SELECT skills FROM users WHERE id = $1", [req.user.id]);
+    const skills = Array.isArray(userResult.rows[0]?.skills) ? userResult.rows[0].skills : [];
+
+    const params = [req.user.id];
+    let matchSelect = ", 0 AS match_score";
+
+    if (skills.length > 0) {
+      params.push(skills);
+      matchSelect = `,
+              (
+                SELECT COUNT(*)
+                FROM unnest(p.tags) AS tag
+                WHERE tag = ANY($2::text[])
+              ) AS match_score`;
+    }
+
+    const result = await pool.query(
+      `SELECT p.*, u.name AS author_name,
+              COALESCE(SUM(CASE WHEN v.vote_type = 'UP' THEN 1 WHEN v.vote_type = 'DOWN' THEN -1 ELSE 0 END), 0) AS score,
+              COUNT(c.id) AS comment_count
+              ${matchSelect}
+       FROM posts p
+       JOIN users u ON u.id = p.author_id
+       LEFT JOIN post_votes v ON v.post_id = p.id
+       LEFT JOIN comments c ON c.post_id = p.id
+       WHERE p.author_id <> $1
+       GROUP BY p.id, u.name
+       ORDER BY match_score DESC, score DESC, comment_count DESC, p.created_at DESC
+       LIMIT 8`,
+      params
+    );
+
+    return res.json({ posts: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function savedPosts(req, res, next) {
+  try {
+    const result = await pool.query(
+      `SELECT p.*, u.name AS author_name,
+              COALESCE(SUM(CASE WHEN v.vote_type = 'UP' THEN 1 WHEN v.vote_type = 'DOWN' THEN -1 ELSE 0 END), 0) AS score,
+              sp.created_at AS saved_at
+       FROM saved_posts sp
+       JOIN posts p ON p.id = sp.post_id
+       JOIN users u ON u.id = p.author_id
+       LEFT JOIN post_votes v ON v.post_id = p.id
+       WHERE sp.user_id = $1
+       GROUP BY p.id, u.name, sp.created_at
+       ORDER BY sp.created_at DESC`,
+      [req.user.id]
+    );
+
+    return res.json({ posts: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function toggleSavedPost(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const postResult = await pool.query("SELECT id FROM posts WHERE id = $1", [id]);
+    if (postResult.rowCount === 0) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const existing = await pool.query(
+      "SELECT id FROM saved_posts WHERE user_id = $1 AND post_id = $2",
+      [req.user.id, id]
+    );
+
+    if (existing.rowCount > 0) {
+      await pool.query("DELETE FROM saved_posts WHERE id = $1", [existing.rows[0].id]);
+      return res.json({ saved: false });
+    }
+
+    await pool.query("INSERT INTO saved_posts (user_id, post_id) VALUES ($1, $2)", [req.user.id, id]);
+    return res.status(201).json({ saved: true });
   } catch (error) {
     return next(error);
   }
@@ -65,6 +165,8 @@ export async function createPost(req, res, next) {
        RETURNING *`,
       [req.user.id, title, content, category, tags]
     );
+
+    await updateUserAnalytics(req.user.id);
 
     return res.status(201).json({ post: result.rows[0] });
   } catch (error) {
@@ -109,7 +211,7 @@ export async function getPost(req, res, next) {
 export async function addComment(req, res, next) {
   try {
     const { id } = req.params;
-    const { content } = req.body;
+    const { content, parentCommentId = null } = req.body;
 
     if (!content) {
       return res.status(400).json({ message: "Comment content is required" });
@@ -120,12 +222,47 @@ export async function addComment(req, res, next) {
       return res.status(404).json({ message: "Post not found" });
     }
 
+    if (parentCommentId) {
+      const parentExists = await pool.query("SELECT id FROM comments WHERE id = $1 AND post_id = $2", [
+        parentCommentId,
+        id,
+      ]);
+
+      if (parentExists.rowCount === 0) {
+        return res.status(404).json({ message: "Parent comment not found" });
+      }
+    }
+
     const result = await pool.query(
-      `INSERT INTO comments (post_id, author_id, content)
-       VALUES ($1, $2, $3)
+      `INSERT INTO comments (post_id, author_id, content, parent_comment_id)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [id, req.user.id, content]
+      [id, req.user.id, content, parentCommentId]
     );
+
+    const postAuthorResult = await pool.query("SELECT author_id, title FROM posts WHERE id = $1", [id]);
+    if (postAuthorResult.rowCount > 0 && postAuthorResult.rows[0].author_id !== req.user.id) {
+      await createNotification(
+        postAuthorResult.rows[0].author_id,
+        id,
+        "SUBMISSION_RECEIVED",
+        `New comment on your post: ${postAuthorResult.rows[0].title}`
+      );
+    }
+
+    if (parentCommentId) {
+      const parentCommentResult = await pool.query("SELECT author_id FROM comments WHERE id = $1", [parentCommentId]);
+      if (parentCommentResult.rowCount > 0 && parentCommentResult.rows[0].author_id !== req.user.id) {
+        await createNotification(
+          parentCommentResult.rows[0].author_id,
+          id,
+          "SUBMISSION_RECEIVED",
+          "Someone replied to your comment"
+        );
+      }
+    }
+
+    await updateUserAnalytics(req.user.id);
 
     return res.status(201).json({ comment: result.rows[0] });
   } catch (error) {
@@ -155,6 +292,11 @@ export async function votePost(req, res, next) {
        RETURNING *`,
       [id, req.user.id, type.toUpperCase()]
     );
+
+    const authorResult = await pool.query("SELECT author_id FROM posts WHERE id = $1", [id]);
+    if (authorResult.rowCount > 0 && authorResult.rows[0].author_id !== req.user.id) {
+      await updateUserAnalytics(authorResult.rows[0].author_id);
+    }
 
     return res.json({ vote: result.rows[0] });
   } catch (error) {

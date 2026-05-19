@@ -36,7 +36,7 @@ export default function RegisterPage() {
   return (
     <section className="max-w-md mx-auto card fade-in">
       <h1 className="text-2xl font-semibold">Register</h1>
-      <p className="text-sm text-ink/70 mt-1">Create your community account</p>
+      <p className="text-sm text-text/70 mt-1">Create your community account</p>
 
       <form onSubmit={handleSubmit} className="space-y-3 mt-5">
         <input
@@ -71,15 +71,15 @@ export default function RegisterPage() {
           onChange={(event) => setForm((prev) => ({ ...prev, skills: event.target.value }))}
         />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <button className="btn-primary w-full" disabled={loading}>
           {loading ? "Creating account..." : "Register"}
         </button>
       </form>
 
-      <p className="text-sm mt-4 text-ink/75">
-        Already registered? <Link to="/login" className="text-ember font-semibold">Login</Link>
+      <p className="text-sm mt-4 text-text/75">
+        Already registered? <Link to="/login" className="text-danger font-semibold">Login</Link>
       </p>
     </section>
   );
