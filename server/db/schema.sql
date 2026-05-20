@@ -288,6 +288,50 @@ CREATE INDEX IF NOT EXISTS idx_kb_article_links_entity ON kb_article_links(entit
 CREATE INDEX IF NOT EXISTS idx_kb_search_gaps_status ON kb_search_gaps(status, last_seen_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_kb_search_gaps_unique ON kb_search_gaps(normalized_query, source);
 
+CREATE TABLE IF NOT EXISTS engineering_sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  title VARCHAR(240) NOT NULL,
+  query_text TEXT,
+  deployment_platform VARCHAR(80),
+  repo_url TEXT,
+  logs_text TEXT,
+  project_manifest TEXT,
+  config_text TEXT,
+  environment_notes TEXT,
+  screenshot_notes TEXT,
+  extracted_files JSONB NOT NULL DEFAULT '[]'::jsonb,
+  detected_stack JSONB NOT NULL DEFAULT '{}'::jsonb,
+  detected_signals JSONB NOT NULL DEFAULT '[]'::jsonb,
+  root_cause JSONB NOT NULL DEFAULT '{}'::jsonb,
+  fix_plan JSONB NOT NULL DEFAULT '[]'::jsonb,
+  explanation JSONB NOT NULL DEFAULT '[]'::jsonb,
+  summary TEXT,
+  session_signature VARCHAR(64) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_engineering_sessions_signature ON engineering_sessions(session_signature);
+CREATE INDEX IF NOT EXISTS idx_engineering_sessions_user ON engineering_sessions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_engineering_sessions_created_at ON engineering_sessions(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS engineering_memory (
+  id SERIAL PRIMARY KEY,
+  signature VARCHAR(64) NOT NULL UNIQUE,
+  issue_type VARCHAR(120) NOT NULL,
+  stack_signature VARCHAR(240) NOT NULL,
+  root_cause TEXT NOT NULL,
+  fix_summary TEXT NOT NULL,
+  occurrence_count INTEGER NOT NULL DEFAULT 1,
+  example_session_id INTEGER REFERENCES engineering_sessions(id) ON DELETE SET NULL,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_engineering_memory_issue_type ON engineering_memory(issue_type, last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_engineering_memory_occurrence ON engineering_memory(occurrence_count DESC, last_seen_at DESC);
+
 -- SPRINT 3: Reputation, Analytics & Community System
 
 -- Update users table with admin flag

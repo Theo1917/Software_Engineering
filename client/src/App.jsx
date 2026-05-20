@@ -20,6 +20,7 @@ import AdvancedSearchPage from "./pages/AdvancedSearchPage";
 import TrendingTasksPage from "./pages/TrendingTasksPage";
 import SmartRecommendationsPage from "./pages/SmartRecommendationsPage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
+import DeploymentAssistantPage from "./pages/DeploymentAssistantPage";
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
           />
           <Route path="/discussions" element={<DiscussionsPage />} />
           <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+          <Route path="/deployment-assistant" element={<DeploymentAssistantPage />} />
           <Route path="/tech-news" element={<TechNewsPage />} />
           <Route
             path="/profile"

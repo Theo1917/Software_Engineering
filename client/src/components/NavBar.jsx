@@ -60,6 +60,9 @@ export default function NavBar() {
           <NavLink to="/knowledge-base" className={navClass}>
             Knowledge Base
           </NavLink>
+          <NavLink to="/deployment-assistant" className={navClass}>
+            AI Debug
+          </NavLink>
           {isAuthenticated && (
             <>
               <NavLink to="/notifications" className={navClass}>

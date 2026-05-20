@@ -20,6 +20,7 @@ import commentsAdvancedRoutes from "./routes/comments-advanced.routes.js";
 import teamsRoutes from "./routes/teams.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import knowledgeBaseRoutes from "./routes/knowledgeBase.routes.js";
+import engineeringAssistantRoutes from "./routes/engineering-assistant.routes.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -73,6 +74,7 @@ app.use("/api/comments-advanced", commentsAdvancedRoutes);
 app.use("/api/teams", teamsRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/knowledge-base", knowledgeBaseRoutes);
+app.use("/api/engineering-assistant", engineeringAssistantRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
