@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { TrendingUp, Flame, Zap, Star, Users, Loader, Clock } from 'lucide-react';
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function TrendingTasksPage() {
   const [tasks, setTasks] = useState([]);
@@ -60,22 +63,17 @@ export default function TrendingTasksPage() {
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-8 flex-wrap">
           {['all', 'hot', 'competitive', 'new', 'active'].map(f => (
-            <button
+            <Button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === f
-                  ? 'bg-cyan-500 text-white'
-                  : 'bg-[#1a1f3a] text-gray-400 border border-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-400'
-              }`}
+              variant={filter === f ? 'primary' : 'ghost'}
+              className="px-4 py-2 rounded-lg font-medium"
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
               {f !== 'all' && (
-                <span className="ml-1 text-xs">
-                  ({tasks.filter(t => t.trend_status === f.toUpperCase()).length})
-                </span>
+                <span className="ml-1 text-xs">({tasks.filter(t => t.trend_status === f.toUpperCase()).length})</span>
               )}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -203,9 +201,7 @@ export default function TrendingTasksPage() {
                   </div>
 
                   {/* CTA Button */}
-                  <button className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 rounded-lg hover:from-cyan-500/40 hover:to-purple-500/40 transition font-medium">
-                    View Task
-                  </button>
+                      <Button className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 rounded-lg hover:from-cyan-500/40 hover:to-purple-500/40 transition font-medium">View Task</Button>
                 </div>
               </div>
             );

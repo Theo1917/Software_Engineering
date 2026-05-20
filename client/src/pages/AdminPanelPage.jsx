@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const tabs = ["dashboard", "tasks", "users", "disputes", "flagged", "logs"];
 
@@ -104,35 +107,32 @@ export default function AdminPanelPage() {
 
   return (
     <section className="space-y-6 fade-in">
-      <div className="card">
+      <Card>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-sm text-text/70 mt-1">Monitoring, moderation, and platform analytics</p>
           </div>
-          <button className="btn-secondary" onClick={loadDashboard} disabled={loading}>
-            Refresh
-          </button>
+          <Button variant="secondary" onClick={loadDashboard} disabled={loading}>Refresh</Button>
         </div>
-      </div>
+      </Card>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div className="card">
+      <Card>
         <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab}
+              variant={activeTab === tab ? 'primary' : 'ghost'}
+              className="rounded-full px-4 py-2 text-sm font-medium"
               onClick={() => setActiveTab(tab)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                activeTab === tab ? "bg-neon text-obsidian" : "bg-white/5 text-text/70 hover:bg-white/10"
-              }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
+            </Button>
           ))}
         </div>
-      </div>
+      </Card>
 
       {loading && <p className="text-sm text-text/60">Loading admin data...</p>}
 
@@ -158,7 +158,7 @@ export default function AdminPanelPage() {
 
           <div className="space-y-3">
             {tasks.map((task) => (
-              <div key={task.id} className="rounded-2xl border border-white/10 bg-surface/80 p-4">
+              <Card key={task.id} className="rounded-2xl p-4">
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <p className="font-semibold">{task.title}</p>
@@ -170,19 +170,15 @@ export default function AdminPanelPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-danger/15 px-3 py-1 text-xs text-danger">
-                      {task.status}
-                    </span>
-                    <button className="btn-secondary text-xs" onClick={() => navigate(`/task/${task.id}`)}>
-                      Open
-                    </button>
+                    <Badge tone="pink" className="px-3 py-1 text-xs">{task.status}</Badge>
+                    <Button variant="secondary" className="text-xs" onClick={() => navigate(`/task/${task.id}`)}>Open</Button>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-text/60">
                   <span>Proposals: {task.proposal_count}</span>
                   <span>Disputes: {task.dispute_count}</span>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -193,7 +189,7 @@ export default function AdminPanelPage() {
           <h2 className="text-lg font-semibold">Users</h2>
           <div className="space-y-3">
             {users.map((user) => (
-              <div key={user.id} className="rounded-2xl border border-white/10 bg-surface/80 p-4">
+                <Card key={user.id} className="rounded-2xl p-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <p className="font-medium">{user.name}</p>
@@ -212,23 +208,13 @@ export default function AdminPanelPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        const reason = window.prompt("Enter suspension reason:");
-                        if (reason) handleSuspendUser(user.id, reason);
-                      }}
-                      className="btn-secondary text-sm"
-                    >
-                      Suspend
-                    </button>
+                    <Button variant="secondary" className="text-sm" onClick={() => { const reason = window.prompt("Enter suspension reason:"); if (reason) handleSuspendUser(user.id, reason); }}>Suspend</Button>
                     {user.moderation_status === "SUSPENDED" && (
-                      <button onClick={() => handleUnsuspendUser(user.id)} className="btn-secondary text-sm">
-                        Unsuspend
-                      </button>
+                      <Button variant="secondary" className="text-sm" onClick={() => handleUnsuspendUser(user.id)}>Unsuspend</Button>
                     )}
                   </div>
                 </div>
-              </div>
+                </Card>
             ))}
           </div>
         </div>
@@ -239,19 +225,17 @@ export default function AdminPanelPage() {
           <h2 className="text-lg font-semibold">Dispute Log</h2>
           <div className="space-y-3">
             {disputes.map((dispute) => (
-              <div key={dispute.id} className="rounded-2xl border border-danger/20 bg-danger/10 p-4">
+              <Card key={dispute.id} className="rounded-2xl p-4 bg-danger/10 border-danger/20">
                 <p className="font-medium">{dispute.task_title}</p>
                 <p className="text-sm text-text/70 mt-1">Raised by: {dispute.raised_by_name}</p>
                 <p className="text-sm text-text/80 mt-2">{dispute.reason}</p>
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => handleResolveDispute(dispute.id, "RESOLVED")} className="btn-primary text-sm">
-                    Resolve
-                  </button>
-                  <button onClick={() => handleResolveDispute(dispute.id, "REJECTED")} className="btn-secondary text-sm">
+                  <Button onClick={() => handleResolveDispute(dispute.id, "RESOLVED")}>Resolve</Button>
+                  <Button variant="secondary" onClick={() => handleResolveDispute(dispute.id, "REJECTED")}>
                     Reject
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -262,28 +246,24 @@ export default function AdminPanelPage() {
           <h2 className="text-lg font-semibold">Community Moderation</h2>
           <div className="space-y-3">
             {flaggedContent.map((content) => (
-              <div key={content.id} className="rounded-2xl border border-danger/20 bg-danger/10 p-4">
+              <Card key={content.id} className="rounded-2xl p-4 bg-danger/10 border-danger/20">
                 <p className="text-xs text-text/60">Reported by: {content.reporter_name}</p>
                 <p className="mt-1 font-medium">Reason: {content.reason}</p>
                 {content.post_title && (
                   <div className="mt-2 space-y-1">
                     <p className="text-sm font-semibold">Post: {content.post_title}</p>
                     <p className="text-sm text-text/70">{content.post_content}</p>
-                    <button className="btn-primary text-sm" onClick={() => handleDeletePost(content.post_id)}>
-                      Delete Post
-                    </button>
+                    <Button onClick={() => handleDeletePost(content.post_id)}>Delete Post</Button>
                   </div>
                 )}
                 {content.comment_content && (
                   <div className="mt-2 space-y-1">
                     <p className="text-sm font-semibold">Comment</p>
                     <p className="text-sm text-text/70">{content.comment_content}</p>
-                    <button className="btn-primary text-sm" onClick={() => handleDeleteComment(content.comment_id)}>
-                      Delete Comment
-                    </button>
+                    <Button onClick={() => handleDeleteComment(content.comment_id)}>Delete Comment</Button>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         </div>
