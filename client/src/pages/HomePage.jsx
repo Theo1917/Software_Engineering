@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function HomePage() {
   return (
@@ -77,18 +80,18 @@ export default function HomePage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <article className="card transition hover:-translate-y-0.5 hover:border-neon/20">
+        <Card className="transition hover:-translate-y-0.5 hover:border-neon/20">
           <h2 className="font-semibold text-lg">Task Marketplace</h2>
           <p className="text-sm text-text/75 mt-2">Creator and solver flows with status tracking and proposal management.</p>
-        </article>
-        <article className="card transition hover:-translate-y-0.5 hover:border-neon/20">
+        </Card>
+        <Card className="transition hover:-translate-y-0.5 hover:border-neon/20">
           <h2 className="font-semibold text-lg">Discussion Engine</h2>
           <p className="text-sm text-text/75 mt-2">Post in categories, vote quality up/down, and build threaded conversation quality.</p>
-        </article>
-        <article className="card transition hover:-translate-y-0.5 hover:border-neon/20">
+        </Card>
+        <Card className="transition hover:-translate-y-0.5 hover:border-neon/20">
           <h2 className="font-semibold text-lg">Profile Analytics</h2>
           <p className="text-sm text-text/75 mt-2">Track tasks created, completed, disputes, and proposal acceptance metrics.</p>
-        </article>
+        </Card>
       </div>
     </section>
   );

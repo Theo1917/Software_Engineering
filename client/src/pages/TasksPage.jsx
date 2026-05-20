@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const initialTaskForm = {
   title: "",
@@ -174,7 +177,7 @@ export default function TasksPage() {
 
   return (
     <section className="space-y-6 fade-in">
-      <div className="card">
+      <Card>
         <h1 className="text-2xl font-semibold">Task Board</h1>
         <p className="text-sm text-text/70 mt-1">Open opportunities from the community.</p>
 
@@ -219,21 +222,11 @@ export default function TasksPage() {
           />
         </div>
 
-        <button className="btn-secondary mt-3" onClick={fetchTasks}>
-          Apply Filters
-        </button>
-        <button
-          className="btn-secondary mt-3 ml-2"
-          onClick={() => {
-            const clearedFilters = { skill: "", difficulty: "", minBudget: "", maxBudget: "" };
-            setSearch("");
-            setFilters(clearedFilters);
-            fetchTasks(clearedFilters, "");
-          }}
-        >
-          Reset
-        </button>
-      </div>
+        <div className="mt-3 flex gap-2">
+          <Button variant="secondary" onClick={fetchTasks}>Apply Filters</Button>
+          <Button variant="secondary" onClick={() => { const clearedFilters = { skill: "", difficulty: "", minBudget: "", maxBudget: "" }; setSearch(""); setFilters(clearedFilters); fetchTasks(clearedFilters, ""); }}>Reset</Button>
+        </div>
+      </Card>
 
       {isAuthenticated && (
         <form onSubmit={handleCreateTask} className="card space-y-3">
@@ -298,9 +291,7 @@ export default function TasksPage() {
             </select>
           </div>
 
-          <button className="btn-primary" type="submit">
-            Publish Task
-          </button>
+          <Button variant="primary" type="submit">Publish Task</Button>
         </form>
       )}
 
@@ -330,7 +321,7 @@ export default function TasksPage() {
           <p className="text-text/70">Loading tasks...</p>
         ) : (
           tasks.map((task) => (
-            <article key={task.id} className="card">
+            <Card key={task.id} className="">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-lg">{task.title}</h3>
@@ -338,41 +329,29 @@ export default function TasksPage() {
                     <p className="text-xs text-cyan-400 mt-1">👥 Team: {task.team_name}</p>
                   )}
                 </div>
-                <span className="px-3 py-1 rounded-full bg-neon/15 text-neon text-xs">{task.status}</span>
+                <Badge className="text-xs" tone="neon">{task.status}</Badge>
               </div>
               <p className="text-sm text-text/80 mt-2">{task.description}</p>
-              <p className="text-xs text-text/60 mt-3">
-                Creator: {task.creator_name} | Difficulty: {task.difficulty} | Budget: Rs {task.budget}
-              </p>
+              <p className="text-xs text-text/60 mt-3">Creator: {task.creator_name} | Difficulty: {task.difficulty} | Budget: Rs {task.budget}</p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {(task.tech_stack || []).map((skill) => (
-                  <span key={skill} className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs">
-                    {skill}
-                  </span>
+                  <Badge key={skill} className="text-xs" tone="neutral">{skill}</Badge>
                 ))}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button className="btn-secondary" onClick={() => navigate(`/task/${task.id}`)}>
-                  View Detail
-                </button>
+                <Button variant="secondary" onClick={() => navigate(`/task/${task.id}`)}>View Detail</Button>
                 {isAuthenticated ? (
                   <>
-                    <button className="btn-primary" onClick={() => handleApply(task.id)}>
-                      Submit Proposal
-                    </button>
-                    <button className="btn-secondary" onClick={() => toggleSavedTask(task.id)}>
-                      {savedTaskIds.has(task.id) ? "Unsave" : "Save Task"}
-                    </button>
+                    <Button variant="primary" onClick={() => handleApply(task.id)}>Submit Proposal</Button>
+                    <Button variant="secondary" onClick={() => toggleSavedTask(task.id)}>{savedTaskIds.has(task.id) ? "Unsave" : "Save Task"}</Button>
                   </>
                 ) : (
-                  <Link className="btn-secondary" to="/login">
-                    Login to Apply
-                  </Link>
+                  <Link to="/login"><Button variant="secondary">Login to Apply</Button></Link>
                 )}
               </div>
-            </article>
+            </Card>
           ))
         )}
         </div>
