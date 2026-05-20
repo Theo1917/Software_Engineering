@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
 
 export default function RatingsPage() {
   const { taskId } = useParams();
@@ -94,10 +96,10 @@ export default function RatingsPage() {
 
   return (
     <section className="space-y-6 fade-in max-w-2xl">
-      <div className="card">
+      <Card>
         <h1 className="text-2xl font-semibold">Rate & Provide Feedback</h1>
         <p className="text-sm text-text/60 mt-1">Task: {task.title}</p>
-      </div>
+      </Card>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -107,20 +109,16 @@ export default function RatingsPage() {
           <div>
             <p className="text-sm font-medium mb-3">Select user to rate</p>
             <div className="space-y-2">
-              <button
+              <Button
                 type="button"
-                onClick={() => selectUserToRate(otherUser.id, otherUser.name)}
-                className={`w-full p-3 border rounded-lg text-left transition ${
-                  ratedUser?.id === otherUser.id
-                    ? "border-neon bg-neon/10"
-                      : "border-white/10 hover:border-neon/30"
+                className={`w-full p-3 text-left ${
+                  ratedUser?.id === otherUser.id ? "border-neon bg-neon/10" : "border-white/10 hover:border-neon/30"
                 }`}
+                onClick={() => selectUserToRate(otherUser.id, otherUser.name)}
               >
                 <p className="font-medium">{otherUser.name}</p>
-                <p className="text-xs text-text/60">
-                  {task.creator_id === user?.id ? "Task Solver" : "Task Creator"}
-                </p>
-              </button>
+                <p className="text-xs text-text/60">{task.creator_id === user?.id ? "Task Solver" : "Task Creator"}</p>
+              </Button>
             </div>
           </div>
 
@@ -131,16 +129,9 @@ export default function RatingsPage() {
                 <p className="text-sm font-medium mb-3">Rating (1-5 stars)</p>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      className={`text-3xl transition ${
-                        star <= rating ? "text-neon" : "text-muted"
-                      }`}
-                    >
+                    <Button key={star} type="button" variant="ghost" className={`text-3xl ${star <= rating ? "text-neon" : "text-muted"}`} onClick={() => setRating(star)}>
                       ★
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {rating > 0 && (

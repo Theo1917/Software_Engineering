@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ChatComponent from "../components/ChatComponent";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function TaskDetailsPage() {
   const { taskId } = useParams();
@@ -133,16 +136,14 @@ export default function TaskDetailsPage() {
     <section className="space-y-6 fade-in">
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div className="card">
+      <Card>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold">{task.title}</h1>
             <p className="mt-1 text-sm text-text/60">Created by {task.creator_name}</p>
             {task.solver_name && <p className="text-sm text-text/60">Assigned to {task.solver_name}</p>}
           </div>
-          <span className="rounded-full bg-neon/15 px-3 py-1 text-sm font-medium text-neon">
-            {task.status.replaceAll("_", " ")}
-          </span>
+          <Badge tone="neon" className="px-3 py-1 text-sm font-medium">{task.status.replaceAll("_", " ")}</Badge>
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -156,52 +157,40 @@ export default function TaskDetailsPage() {
           <p className="text-sm font-medium">Description</p>
           <p className="mt-2 text-sm text-text/80">{task.description}</p>
         </div>
-      </div>
+      </Card>
 
-      <div className="card">
+      <Card>
         <div className="flex flex-wrap gap-3">
           {isCreator && isInNegotiation && selectedProposal && (
-            <button onClick={() => handleConfirmNegotiation(selectedProposal)} className="btn-primary">
-              Confirm Negotiation
-            </button>
+            <Button onClick={() => handleConfirmNegotiation(selectedProposal)}>Confirm Negotiation</Button>
           )}
 
           {isSolver && isInProgress && (
-            <button onClick={handleSubmitDeliverables} className="btn-primary">
-              Submit Deliverables
-            </button>
+            <Button onClick={handleSubmitDeliverables}>Submit Deliverables</Button>
           )}
 
           {isCreator && isUnderReview && (
             <>
-              <button onClick={handleApproveSubmission} className="btn-primary">
-                Approve Submission
-              </button>
-              <button onClick={handleRejectSubmission} className="btn-secondary">
-                Reject Submission
-              </button>
+              <Button onClick={handleApproveSubmission}>Approve Submission</Button>
+              <Button variant="secondary" onClick={handleRejectSubmission}>Reject Submission</Button>
             </>
           )}
 
           {task.status === "COMPLETED" && isSolver && (
-            <button onClick={handleRateTask} className="btn-primary">
-              Rate & Provide Feedback
-            </button>
+            <Button onClick={handleRateTask}>Rate & Provide Feedback</Button>
           )}
 
           {(isCreator || isSolver) && ["IN_PROGRESS", "UNDER_REVIEW", "COMPLETED"].includes(task.status) && (
-            <button onClick={handleRaiseDispute} className="btn-secondary">
-              Raise Dispute
-            </button>
+            <Button variant="secondary" onClick={handleRaiseDispute}>Raise Dispute</Button>
           )}
 
           {task.status === "COMPLETED" && (isCreator || isSolver || user?.isAdmin) && (
-            <button onClick={handleCreateKnowledgeBaseDraft} className="btn-secondary" disabled={kbDrafting}>
+            <Button variant="secondary" onClick={handleCreateKnowledgeBaseDraft} disabled={kbDrafting}>
               {kbDrafting ? "Drafting KB Article..." : "Create KB Draft"}
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
 
       {(isCreator || isSolver) && isInProgress && (
         <div className="card">

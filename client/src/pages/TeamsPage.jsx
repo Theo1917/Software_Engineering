@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { apiCall } from "../lib/api";
 import NavBar from "../components/NavBar";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState([]);
@@ -160,15 +163,10 @@ export default function TeamsPage() {
             <div className="bg-slate-900 rounded-lg border border-slate-700 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-cyan-400">Your Teams</h2>
-                <button
-                  onClick={() => setShowCreateForm(!showCreateForm)}
-                  className="px-3 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-sm font-medium transition"
-                >
-                  +
-                </button>
+                <Button onClick={() => setShowCreateForm(!showCreateForm)}>+</Button>
               </div>
 
-              {showCreateForm && (
+                  {showCreateForm && (
                 <form onSubmit={handleCreateTeam} className="mb-6 space-y-3 pb-6 border-b border-slate-700">
                   <input
                     type="text"
@@ -192,18 +190,12 @@ export default function TeamsPage() {
                     />
                     <span>Public team</span>
                   </label>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 rounded font-medium transition"
-                  >
-                    Create Team
-                  </button>
+                  <Button type="submit" className="w-full">Create Team</Button>
                 </form>
               )}
 
               <div className="space-y-2">
-                {teams.length === 0 ? (
+                    {teams.length === 0 ? (
                   <p className="text-slate-400 text-sm">No teams yet. Create one to get started!</p>
                 ) : (
                   teams.map((team) => (
@@ -237,12 +229,7 @@ export default function TeamsPage() {
                       <p className="text-slate-300">{selectedTeam.team.description || "No description"}</p>
                     </div>
                     {selectedTeam.team.current_user_role === "ADMIN" && (
-                      <button
-                        onClick={handleDeleteTeam}
-                        className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded text-sm transition"
-                      >
-                        Delete Team
-                      </button>
+                      <Button variant="danger" onClick={handleDeleteTeam}>Delete Team</Button>
                     )}
                   </div>
                   <div className="flex gap-4 text-sm text-slate-400">
@@ -256,12 +243,7 @@ export default function TeamsPage() {
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-cyan-400">Members ({selectedTeam.members.length})</h2>
                     {selectedTeam.team.current_user_role === "ADMIN" && (
-                      <button
-                        onClick={() => setShowAddMemberForm(!showAddMemberForm)}
-                        className="px-3 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-sm font-medium transition"
-                      >
-                        Add Member
-                      </button>
+                      <Button onClick={() => setShowAddMemberForm(!showAddMemberForm)}>Add Member</Button>
                     )}
                   </div>
 
@@ -281,19 +263,19 @@ export default function TeamsPage() {
                         {searchResults.length > 0 && (
                           <div className="mt-2 max-h-40 overflow-y-auto bg-slate-800 border border-slate-600 rounded">
                             {searchResults.map((user) => (
-                              <button
-                                key={user.id}
-                                type="button"
-                                onClick={() => {
-                                  setMemberForm({ ...memberForm, userId: user.id });
-                                  setUserSearch(user.name);
-                                  setSearchResults([]);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700 last:border-b-0"
-                              >
-                                <div className="text-sm font-medium">{user.name}</div>
-                                <div className="text-xs text-slate-400">{user.email}</div>
-                              </button>
+                                  <button
+                                        key={user.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setMemberForm({ ...memberForm, userId: user.id });
+                                          setUserSearch(user.name);
+                                          setSearchResults([]);
+                                        }}
+                                        className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700 last:border-b-0"
+                                      >
+                                        <div className="text-sm font-medium">{user.name}</div>
+                                        <div className="text-xs text-slate-400">{user.email}</div>
+                                      </button>
                             ))}
                           </div>
                         )}

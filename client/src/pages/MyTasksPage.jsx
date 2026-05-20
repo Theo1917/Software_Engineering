@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const laneOrder = ["OPEN", "IN_NEGOTIATION", "IN_PROGRESS", "COMPLETED", "DISPUTED"];
 
@@ -149,12 +152,9 @@ export default function MyTasksPage() {
             <p className="text-sm text-text/70 mt-1">Sprint 1 task lanes connected with Sprint 2 backend workflow.</p>
           </div>
           {!editingTaskId && (
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="btn-primary"
-            >
+            <Button onClick={() => setShowCreateForm(!showCreateForm)}>
               {showCreateForm ? "Cancel" : "+ New Task"}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -213,12 +213,8 @@ export default function MyTasksPage() {
             />
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary flex-1">
-              {editingTaskId ? "Update Task" : "Create Task"}
-            </button>
-            <button type="button" onClick={cancelEdit} className="btn-secondary flex-1">
-              Cancel
-            </button>
+            <Button type="submit" className="flex-1">{editingTaskId ? "Update Task" : "Create Task"}</Button>
+            <Button variant="secondary" type="button" onClick={cancelEdit} className="flex-1">Cancel</Button>
           </div>
         </form>
       )}
@@ -237,26 +233,11 @@ export default function MyTasksPage() {
                   <div className="mt-2 flex flex-wrap gap-1">
                     {task.status === "OPEN" && (
                       <>
-                        <button
-                          onClick={() => handleEditClick(task)}
-                          className="text-xs px-2 py-1 bg-neon/15 text-neon rounded hover:bg-neon/25"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-xs px-2 py-1 bg-danger/15 text-danger rounded hover:bg-danger/25"
-                        >
-                          Delete
-                        </button>
+                            <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => handleEditClick(task)}>Edit</Button>
+                            <Button variant="danger" className="text-xs px-2 py-1" onClick={() => handleDeleteTask(task.id)}>Delete</Button>
                       </>
                     )}
-                    <button
-                      onClick={() => navigate(`/task/${task.id}`)}
-                      className="text-xs px-2 py-1 bg-white/5 text-text/70 rounded hover:bg-white/10"
-                    >
-                      View
-                    </button>
+                    <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => navigate(`/task/${task.id}`)}>View</Button>
                   </div>
                 </div>
               ))}

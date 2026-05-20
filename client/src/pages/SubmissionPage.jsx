@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
 
 export default function SubmissionPage() {
   const { taskId } = useParams();
@@ -49,10 +51,10 @@ export default function SubmissionPage() {
 
   return (
     <section className="space-y-6 fade-in max-w-2xl">
-      <div className="card">
+      <Card>
         <h1 className="text-2xl font-semibold">Submit Deliverables</h1>
         <p className="text-sm text-text/60 mt-1">Upload your work and add completion notes</p>
-      </div>
+      </Card>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -97,26 +99,22 @@ export default function SubmissionPage() {
 
         {/* Submit Buttons */}
         <div className="flex gap-3 pt-4">
-          <button type="submit" disabled={loading} className="btn-primary flex-1">
+          <Button type="submit" disabled={loading} className="flex-1">
             {loading ? "Submitting..." : "Submit Deliverables"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/task/${taskId}`)}
-            className="btn-secondary flex-1"
-          >
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => navigate(`/task/${taskId}`)} className="flex-1">
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
 
       {/* Info Box */}
-      <div className="card bg-white/5 border border-white/10">
+      <Card className="bg-white/5 border border-white/10">
         <p className="text-sm text-text">
           <strong>Note:</strong> Once you submit your deliverables, the task creator will review your work.
           They can approve or request revisions. Keep your submission notes clear and comprehensive.
         </p>
-      </div>
+      </Card>
     </section>
   );
 }
