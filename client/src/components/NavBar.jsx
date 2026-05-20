@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Button from "./Button";
 
 function navClass({ isActive }) {
   return `px-3 py-2 rounded-full text-sm transition ${
@@ -88,12 +89,9 @@ export default function NavBar() {
               </NavLink>
             </>
           ) : (
-            <button
-              onClick={logout}
-              className="rounded-full bg-danger px-3 py-2 text-sm text-obsidian hover:bg-danger/90"
-            >
+            <Button variant="danger" onClick={logout}>
               Logout {user?.name ? `(${user.name})` : ""}
-            </button>
+            </Button>
           )}
         </nav>
       </div>

@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import NavBar from "./components/NavBar";
+import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DiscussionsPage from "./pages/DiscussionsPage";
 import HomePage from "./pages/HomePage";
@@ -23,10 +23,8 @@ import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 
 export default function App() {
   return (
-    <div className="page-shell min-h-screen bg-obsidian text-text">
-      <NavBar />
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <Routes>
+    <Layout>
+      <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -104,7 +102,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </main>
-    </div>
+      </Routes>
+    </Layout>
   );
 }
