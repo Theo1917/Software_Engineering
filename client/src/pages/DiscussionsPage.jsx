@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const initialPost = {
   title: "",
@@ -180,16 +183,16 @@ export default function DiscussionsPage() {
               <h2 className="text-lg font-semibold">Discover Posts</h2>
               <p className="text-sm text-text/60 mt-1">Search posts by title, content, or tags.</p>
             </div>
-            <button
+              <Button
               type="button"
               className="btn-secondary"
               onClick={() => {
                 setSearch("");
                 fetchPosts("");
               }}
-            >
-              Reset
-            </button>
+              >
+                Reset
+              </Button>
           </div>
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <input
@@ -198,9 +201,7 @@ export default function DiscussionsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
-            <button type="button" className="btn-primary" onClick={fetchPosts}>
-              Search
-            </button>
+              <Button type="button" onClick={fetchPosts}>Search</Button>
           </div>
         </div>
 
@@ -244,7 +245,7 @@ export default function DiscussionsPage() {
                 onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
               />
             </div>
-            <button className="btn-primary">Publish Post</button>
+              <Button>Publish Post</Button>
           </form>
         )}
 
@@ -262,16 +263,14 @@ export default function DiscussionsPage() {
               <p className="mt-3 text-sm text-text/75 line-clamp-3">{post.content}</p>
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button className="btn-secondary" onClick={() => viewPost(post.id)}>
-                  Open Thread
-                </button>
+                  <Button variant="secondary" onClick={() => viewPost(post.id)}>Open Thread</Button>
                 {isAuthenticated && (
                   <>
-                    <button className="btn-secondary" onClick={() => handleVote(post.id, "UP")}>Upvote</button>
-                    <button className="btn-secondary" onClick={() => handleVote(post.id, "DOWN")}>Downvote</button>
-                    <button className="btn-secondary" onClick={() => toggleSavedPost(post.id)}>
-                      {savedPostIds.has(post.id) ? "Unsave" : "Save"}
-                    </button>
+                      <Button variant="secondary" onClick={() => handleVote(post.id, "UP")}>Upvote</Button>
+                      <Button variant="secondary" onClick={() => handleVote(post.id, "DOWN")}>Downvote</Button>
+                      <Button variant="secondary" onClick={() => toggleSavedPost(post.id)}>
+                        {savedPostIds.has(post.id) ? "Unsave" : "Save"}
+                      </Button>
                   </>
                 )}
                 <span className="text-xs text-text/60">Score: {post.score}</span>
@@ -374,7 +373,7 @@ export default function DiscussionsPage() {
                   onChange={(event) => setPostComment(event.target.value)}
                   required
                 />
-                <button className="btn-primary">Comment on Post</button>
+                  <Button>Comment on Post</Button>
               </form>
             )}
           </>
@@ -485,18 +484,15 @@ function CommentNode({
         <p className="mt-2 text-sm text-text/85 leading-relaxed">{comment.content}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          <button className="btn-secondary text-xs px-2 py-1" onClick={() => onVote(comment.id, "UP")}>
+          <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => onVote(comment.id, "UP") }>
             👍 Upvote
-          </button>
-          <button className="btn-secondary text-xs px-2 py-1" onClick={() => onVote(comment.id, "DOWN")}>
+          </Button>
+          <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => onVote(comment.id, "DOWN") }>
             👎 Downvote
-          </button>
-          <button
-            className="btn-secondary text-xs px-2 py-1"
-            onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
-          >
+          </Button>
+          <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}>
             💬 Reply
-          </button>
+          </Button>
         </div>
       </article>
 
@@ -511,16 +507,10 @@ function CommentNode({
             required
           />
           <div className="flex gap-2">
-            <button className="btn-primary text-xs px-3 py-1" type="submit">
-              Post Reply
-            </button>
-            <button
-              className="btn-secondary text-xs px-3 py-1"
-              type="button"
-              onClick={() => setActiveReplyId(null)}
-            >
+            <Button type="submit" className="text-xs px-3 py-1">Post Reply</Button>
+            <Button variant="secondary" type="button" className="text-xs px-3 py-1" onClick={() => setActiveReplyId(null)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}

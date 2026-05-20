@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -146,9 +148,9 @@ export default function NotificationsPage() {
             <p className="text-sm text-text/60 mt-1">Stay updated with your task activities</p>
           </div>
           {notifications.some((n) => !n.is_read) && (
-            <button onClick={handleMarkAllAsRead} className="text-sm text-neon hover:text-neon/80">
+            <Button variant="ghost" className="text-sm text-neon" onClick={handleMarkAllAsRead}>
               Mark all as read
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -158,26 +160,28 @@ export default function NotificationsPage() {
       {/* Filter Tabs */}
       <div className="card">
         <div className="flex gap-2">
-          <button
-            onClick={() => setFilter("all")}
+          <Button
+            variant="ghost"
             className={`px-4 py-2 rounded-lg text-sm transition ${
               filter === "all"
                 ? "bg-neon/15 text-neon font-medium"
                 : "bg-white/5 text-text/60 hover:bg-white/10"
             }`}
+            onClick={() => setFilter("all")}
           >
             All
-          </button>
-          <button
-            onClick={() => setFilter("unread")}
+          </Button>
+          <Button
+            variant="ghost"
             className={`px-4 py-2 rounded-lg text-sm transition ${
               filter === "unread"
                 ? "bg-neon/15 text-neon font-medium"
                 : "bg-white/5 text-text/60 hover:bg-white/10"
             }`}
+            onClick={() => setFilter("unread")}
           >
             Unread
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -187,9 +191,9 @@ export default function NotificationsPage() {
             <h2 className="text-lg font-semibold">Notification Preferences</h2>
             <p className="text-sm text-text/60 mt-1">Choose what should trigger inbox updates.</p>
           </div>
-          <button onClick={handleSavePreferences} className="btn-primary" disabled={savingPreferences}>
+          <Button onClick={handleSavePreferences} disabled={savingPreferences}>
             {savingPreferences ? "Saving..." : "Save Preferences"}
-          </button>
+          </Button>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -250,29 +254,20 @@ export default function NotificationsPage() {
                 </div>
                 <div className="flex gap-2">
                   {!notification.is_read && (
-                    <button
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      className="text-xs text-neon hover:text-neon/80"
-                    >
+                    <Button variant="ghost" className="text-xs text-neon" onClick={() => handleMarkAsRead(notification.id)}>
                       Mark read
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    onClick={() => handleDeleteNotification(notification.id)}
-                    className="text-xs text-danger hover:text-danger/80"
-                  >
+                  <Button variant="ghost" className="text-xs text-danger" onClick={() => handleDeleteNotification(notification.id)}>
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {notification.task_id && (
-                <button
-                  onClick={() => handleNavigateToTask(notification.task_id)}
-                  className="text-xs text-neon hover:text-neon/80 mt-2"
-                >
+                <Button variant="ghost" className="text-xs text-neon mt-2" onClick={() => handleNavigateToTask(notification.task_id)}>
                   View Task →
-                </button>
+                </Button>
               )}
             </div>
           ))}
