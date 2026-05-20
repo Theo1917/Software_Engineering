@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Filter, Loader, AlertCircle } from 'lucide-react';
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function AdvancedSearchPage() {
   const [query, setQuery] = useState('');
@@ -189,13 +192,14 @@ export default function AdvancedSearchPage() {
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <div className="w-80 flex-shrink-0">
-            <button
+            <Button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
               className="w-full flex items-center gap-2 px-4 py-3 bg-[#1a1f3a] text-cyan-400 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/10 transition mb-4 md:hidden"
             >
               <Filter className="w-4 h-4" />
               {showFilters ? 'Hide' : 'Show'} Filters
-            </button>
+            </Button>
 
             <div className={`${showFilters ? 'block' : 'hidden'} md:block space-y-4`}>
               {/* Result Type Filters */}
@@ -264,20 +268,22 @@ export default function AdvancedSearchPage() {
                 <div className="bg-[#1a1f3a] rounded-lg border border-cyan-500/20 p-4">
                   <h3 className="text-sm font-semibold text-cyan-400 mb-3">Saved Searches</h3>
                   {savedSearches.map(search => (
-                    <button
+                    <Button
                       key={search.id}
+                      type="button"
                       onClick={() => loadSavedSearch(search)}
                       className="w-full text-left text-sm text-gray-400 px-2 py-1 rounded hover:bg-cyan-500/10 hover:text-cyan-400 transition mb-1"
                     >
                       {search.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
 
               {/* Save Current Search */}
               {query && (
-                <button
+                <Button
+                  type="button"
                   onClick={() => {
                     const name = prompt('Search name:');
                     if (name) saveCurrentSearch(name);
@@ -285,7 +291,7 @@ export default function AdvancedSearchPage() {
                   className="w-full px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition text-sm font-medium"
                 >
                   Save Search
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -317,22 +323,16 @@ export default function AdvancedSearchPage() {
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">Tasks ({results.tasks.length})</h2>
                 <div className="space-y-3">
                   {results.tasks.map(task => (
-                    <div key={task.id} className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/50 transition">
+                    <Card key={task.id} className="rounded-lg p-4 hover:border-cyan-500/50 transition bg-[#1a1f3a] border-cyan-500/20">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{task.title}</h3>
                           <p className="text-sm text-gray-400 mt-1 line-clamp-2">{task.description}</p>
                           <div className="flex gap-2 mt-2 flex-wrap">
-                            <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded">
-                              {task.difficulty}
-                            </span>
-                            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">
-                              ${task.budget.toLocaleString()}
-                            </span>
+                            <Badge tone="neon" className="text-xs px-2 py-1">{task.difficulty}</Badge>
+                            <Badge className="text-xs px-2 py-1">${task.budget.toLocaleString()}</Badge>
                             {task.complexity_score && (
-                              <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
-                                Complexity: {task.complexity_score.toFixed(1)}/10
-                              </span>
+                              <Badge tone="pink" className="text-xs px-2 py-1">Complexity: {task.complexity_score.toFixed(1)}/10</Badge>
                             )}
                           </div>
                         </div>
@@ -340,7 +340,7 @@ export default function AdvancedSearchPage() {
                           {task.views} views
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -351,14 +351,14 @@ export default function AdvancedSearchPage() {
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">Discussions ({results.posts.length})</h2>
                 <div className="space-y-3">
                   {results.posts.map(post => (
-                    <div key={post.id} className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/50 transition">
+                    <Card key={post.id} className="rounded-lg p-4 hover:border-cyan-500/50 transition bg-[#1a1f3a] border-cyan-500/20">
                       <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{post.title}</h3>
                       <p className="text-sm text-gray-400 mt-1 line-clamp-2">{post.content}</p>
                       <div className="flex gap-2 mt-2">
                         <span className="text-xs text-gray-500">by {post.author_name}</span>
                         <span className="text-xs text-gray-500">Score: {post.score}</span>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -369,29 +369,21 @@ export default function AdvancedSearchPage() {
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">Knowledge Base ({results.knowledgeBase.length})</h2>
                 <div className="space-y-3">
                   {results.knowledgeBase.map(article => (
-                    <div key={article.id} className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/50 transition">
+                    <Card key={article.id} className="rounded-lg p-4 hover:border-cyan-500/50 transition bg-[#1a1f3a] border-cyan-500/20">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{article.title}</h3>
                           <p className="text-sm text-gray-400 mt-1 line-clamp-2">{article.summary || article.content}</p>
                           <div className="flex gap-2 mt-2 flex-wrap">
                             {article.category_name && (
-                              <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded">
-                                {article.category_name}
-                              </span>
+                              <Badge tone="neon" className="text-xs px-2 py-1">{article.category_name}</Badge>
                             )}
-                            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">
-                              {article.difficulty}
-                            </span>
+                            <Badge className="text-xs px-2 py-1">{article.difficulty}</Badge>
                             {article.read_time_minutes != null && (
-                              <span className="text-xs bg-slate-500/20 text-slate-300 px-2 py-1 rounded">
-                                {article.read_time_minutes} min read
-                              </span>
+                              <Badge className="text-xs px-2 py-1">{article.read_time_minutes} min read</Badge>
                             )}
                             {Array.isArray(article.tags) && article.tags.slice(0, 4).map(tag => (
-                              <span key={tag} className="text-xs bg-white/5 text-gray-300 px-2 py-1 rounded">
-                                #{tag}
-                              </span>
+                              <Badge key={tag} className="text-xs px-2 py-1">#{tag}</Badge>
                             ))}
                           </div>
                         </div>
@@ -400,7 +392,7 @@ export default function AdvancedSearchPage() {
                           <div>{article.view_count ?? 0} views</div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -411,14 +403,14 @@ export default function AdvancedSearchPage() {
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">People ({results.people.length})</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {results.people.map(person => (
-                    <div key={person.id} className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/50 transition">
+                    <Card key={person.id} className="rounded-lg p-4 hover:border-cyan-500/50 transition bg-[#1a1f3a] border-cyan-500/20">
                       <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{person.name}</h3>
                       <p className="text-xs text-gray-500">{person.email}</p>
                       <div className="flex gap-2 mt-2 text-xs text-gray-400">
                         <span>⭐ {person.reputation}</span>
                         {person.tasks_completed && <span>✓ {person.tasks_completed} tasks</span>}
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -428,9 +420,9 @@ export default function AdvancedSearchPage() {
               <div className="mt-8 rounded-lg border border-cyan-500/20 bg-[#1a1f3a] p-4">
                 <h2 className="text-lg font-semibold text-cyan-400">No Knowledge Base results</h2>
                 <p className="mt-1 text-sm text-gray-400">Turn this search into a missing-article request.</p>
-                <button onClick={requestKnowledgeBaseArticle} className="mt-3 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition text-sm font-medium">
+                <Button type="button" onClick={requestKnowledgeBaseArticle} className="mt-3 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition text-sm font-medium">
                   Request KB Article
-                </button>
+                </Button>
                 {requestMessage && <p className="mt-2 text-sm text-gray-300">{requestMessage}</p>}
               </div>
             )}

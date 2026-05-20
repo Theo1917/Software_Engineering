@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Sparkles, TrendingUp, Loader, AlertCircle } from 'lucide-react';
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function SmartRecommendationsPage() {
   const [recommendations, setRecommendations] = useState([]);
@@ -87,26 +90,12 @@ export default function SmartRecommendationsPage() {
 
         {/* View Toggle */}
         <div className="flex gap-2 mb-8">
-          <button
-            onClick={() => setScoreView('simple')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              scoreView === 'simple'
-                ? 'bg-cyan-500 text-white'
-                : 'bg-[#1a1f3a] text-gray-400 border border-cyan-500/20 hover:border-cyan-500/50'
-            }`}
-          >
+          <Button type="button" variant={scoreView === 'simple' ? 'primary' : 'ghost'} onClick={() => setScoreView('simple')}>
             Simple View
-          </button>
-          <button
-            onClick={() => setScoreView('detailed')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              scoreView === 'detailed'
-                ? 'bg-cyan-500 text-white'
-                : 'bg-[#1a1f3a] text-gray-400 border border-cyan-500/20 hover:border-cyan-500/50'
-            }`}
-          >
+          </Button>
+          <Button type="button" variant={scoreView === 'detailed' ? 'primary' : 'ghost'} onClick={() => setScoreView('detailed')}>
             Detailed Scoring
-          </button>
+          </Button>
         </div>
 
         {/* Error */}
@@ -124,9 +113,9 @@ export default function SmartRecommendationsPage() {
             const scoreColor = getScoreColor(totalScore);
 
             return (
-              <div
+              <Card
                 key={task.id}
-                className="bg-gradient-to-r from-[#1a1f3a] to-[#151d2b] border border-cyan-500/20 rounded-lg overflow-hidden hover:border-cyan-500/50 transition group"
+                className="relative bg-gradient-to-r from-[#1a1f3a] to-[#151d2b] border border-cyan-500/20 rounded-lg overflow-hidden hover:border-cyan-500/50 transition group"
               >
                 {/* Rank Badge */}
                 <div className="absolute top-2 right-2 bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-xs font-bold">
@@ -184,9 +173,7 @@ export default function SmartRecommendationsPage() {
                         <div className="mb-4">
                           <div className="flex flex-wrap gap-1">
                             {task.tech_stack.slice(0, 6).map((tech, i) => (
-                              <span key={i} className="text-xs bg-cyan-500/10 text-cyan-300 px-2 py-1 rounded">
-                                {tech}
-                              </span>
+                              <Badge key={i} tone="neon" className="text-xs px-2 py-1">{tech}</Badge>
                             ))}
                             {task.tech_stack.length > 6 && (
                               <span className="text-xs text-gray-500 px-2 py-1">
@@ -255,13 +242,13 @@ export default function SmartRecommendationsPage() {
                       )}
 
                       {/* Action Button */}
-                      <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-lg font-semibold transition">
+                      <Button type="button" className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-lg font-semibold transition">
                         View Task
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
