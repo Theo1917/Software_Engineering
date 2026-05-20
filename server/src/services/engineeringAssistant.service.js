@@ -75,6 +75,52 @@ function splitKeywords(text) {
     ?.filter((token) => token.length > 1) || [];
 }
 
+const ENGINEERING_CONCEPTS = {
+  deployment: ["deploy", "release", "production", "build", "runtime", "startup"],
+  backend: ["api", "server", "express", "fastapi", "service", "endpoint"],
+  frontend: ["client", "react", "vite", "next", "browser", "ui"],
+  database: ["postgres", "postgresql", "mongo", "mongodb", "db", "database_url", "connection"],
+  env: ["environment", "env", "secret", "variable", "configuration"],
+  cors: ["origin", "preflight", "credentials", "cross-origin"],
+  docker: ["container", "dockerfile", "compose", "image", "entrypoint"],
+  vercel: ["edge", "functions", "vercel.json", "rewrite"],
+  render: ["render.yaml", "healthcheck", "web service"],
+  railway: ["railway.json", "nixpacks"],
+  crash: ["offline", "down", "failed", "exception", "error", "stacktrace"],
+};
+
+function expandSemanticTerms(text) {
+  const tokens = splitKeywords(text);
+  const expanded = new Set(tokens);
+
+  Object.entries(ENGINEERING_CONCEPTS).forEach(([concept, synonyms]) => {
+    if (tokens.includes(concept) || synonyms.some((term) => tokens.includes(term))) {
+      expanded.add(concept);
+      synonyms.forEach((term) => expanded.add(term));
+    }
+  });
+
+  return [...expanded];
+}
+
+function semanticScore(query, candidate) {
+  const queryTerms = expandSemanticTerms(query);
+  const candidateTerms = new Set(expandSemanticTerms(candidate));
+
+  if (!queryTerms.length || !candidateTerms.size) {
+    return 0;
+  }
+
+  let score = 0;
+  queryTerms.forEach((term) => {
+    if (candidateTerms.has(term)) {
+      score += term.length >= 7 ? 3 : 2;
+    }
+  });
+
+  return score;
+}
+
 function uniq(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -1165,9 +1211,12 @@ export async function listEngineeringSessions({ queryText = "", userId = null, l
             session.fix_plan ? JSON.stringify(session.fix_plan) : "",
           ].join(" ").toLowerCase();
 
+          const lexicalScore = scoreOverlap(query, sessionText);
+          const semantic = semanticScore(query, sessionText);
+
           return {
             ...session,
-            score: scoreOverlap(query, sessionText),
+            score: lexicalScore + semantic,
           };
         })
         .filter((session) => session.score > 0)
@@ -1189,4 +1238,66 @@ export async function getEngineeringSessionById(sessionId) {
   );
 
   return result.rows[0] || null;
+}
+
+export async function semanticSearchEngineeringKnowledge({ queryText = "", limit = 10 }) {
+  const query = normalizeText(queryText);
+  if (!query) {
+    return { sessions: [], memory: [] };
+  }
+
+  const sessionResult = await pool.query(
+    `SELECT id, title, query_text, deployment_platform, summary, root_cause, fix_plan, detected_stack, created_at
+     FROM engineering_sessions
+     ORDER BY created_at DESC
+     LIMIT 120`
+  );
+
+  const memoryResult = await pool.query(
+    `SELECT id, issue_type, stack_signature, root_cause, fix_summary, occurrence_count, last_seen_at
+     FROM engineering_memory
+     ORDER BY occurrence_count DESC, last_seen_at DESC
+     LIMIT 120`
+  );
+
+  const sessions = sessionResult.rows
+    .map((session) => {
+      const sessionText = [
+        session.title,
+        session.query_text,
+        session.summary,
+        session.root_cause ? JSON.stringify(session.root_cause) : "",
+        session.fix_plan ? JSON.stringify(session.fix_plan) : "",
+        session.detected_stack ? JSON.stringify(session.detected_stack) : "",
+      ].join(" ");
+
+      const lexical = scoreOverlap(query, sessionText);
+      const semantic = semanticScore(query, sessionText);
+      const blended = lexical + semantic;
+
+      return {
+        ...session,
+        score: blended,
+      };
+    })
+    .filter((session) => session.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  const memory = memoryResult.rows
+    .map((item) => {
+      const text = [item.issue_type, item.stack_signature, item.root_cause, item.fix_summary].join(" ");
+      const lexical = scoreOverlap(query, text);
+      const semantic = semanticScore(query, text);
+
+      return {
+        ...item,
+        score: lexical + semantic,
+      };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return { sessions, memory };
 }

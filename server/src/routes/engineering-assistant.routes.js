@@ -4,6 +4,7 @@ import {
   analyzeProjectData,
   getProjectSession,
   listProjectSessions,
+  semanticSearch,
 } from "../controllers/engineeringAssistant.controller.js";
 
 const router = express.Router();
@@ -17,6 +18,7 @@ const upload = multer({
 
 router.post("/analyze", upload.array("attachments", 12), analyzeProjectData);
 router.get("/sessions", listProjectSessions);
+router.get("/semantic-search", semanticSearch);
 router.get("/sessions/:id", getProjectSession);
 
 export default router;

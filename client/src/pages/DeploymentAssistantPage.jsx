@@ -24,6 +24,9 @@ export default function DeploymentAssistantPage() {
   const [relatedIssues, setRelatedIssues] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [memory, setMemory] = useState([]);
+  const [semanticQuery, setSemanticQuery] = useState("");
+  const [semanticResults, setSemanticResults] = useState({ sessions: [], memory: [] });
+  const [semanticLoading, setSemanticLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -52,6 +55,31 @@ export default function DeploymentAssistantPage() {
 
   function handleFileChange(event) {
     setFiles(Array.from(event.target.files || []));
+  }
+
+  async function handleSemanticSearch(event) {
+    event.preventDefault();
+    if (!semanticQuery.trim()) {
+      return;
+    }
+
+    try {
+      setSemanticLoading(true);
+      const response = await api.get("/engineering-assistant/semantic-search", {
+        params: {
+          q: semanticQuery.trim(),
+          limit: 8,
+        },
+      });
+      setSemanticResults({
+        sessions: response.data.sessions || [],
+        memory: response.data.memory || [],
+      });
+    } catch (apiError) {
+      setError(apiError.response?.data?.message || "Semantic search failed.");
+    } finally {
+      setSemanticLoading(false);
+    }
   }
 
   async function handleAnalyze(event) {
@@ -234,6 +262,55 @@ export default function DeploymentAssistantPage() {
         </Card>
 
         <div className="space-y-6">
+          <Card className="space-y-3">
+            <h2 className="text-lg font-semibold">Semantic Engineering Search</h2>
+            <form onSubmit={handleSemanticSearch} className="space-y-3">
+              <Input
+                label="Ask naturally"
+                placeholder="Why is my backend crashing after deployment on Render?"
+                value={semanticQuery}
+                onChange={(event) => setSemanticQuery(event.target.value)}
+              />
+              <Button type="submit" variant="secondary" disabled={semanticLoading}>
+                {semanticLoading ? "Searching..." : "Find Similar Issues"}
+              </Button>
+            </form>
+
+            {(semanticResults.sessions.length > 0 || semanticResults.memory.length > 0) && (
+              <div className="space-y-3">
+                {semanticResults.sessions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted">Related Sessions</p>
+                    {semanticResults.sessions.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => handleOpenSession(item.id)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left hover:border-neon/40"
+                      >
+                        <p className="text-sm font-medium text-text">{item.title}</p>
+                        <p className="mt-1 text-xs text-text/60 line-clamp-2">{item.summary}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {semanticResults.memory.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted">Matching Patterns</p>
+                    {semanticResults.memory.map((item) => (
+                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+                        <p className="text-sm font-medium text-text">{item.issue_type}</p>
+                        <p className="mt-1 text-xs text-text/60">{item.root_cause}</p>
+                        <p className="mt-1 text-xs text-text/50">Seen {item.occurrence_count} time(s)</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
           <Card className="space-y-3">
             <h2 className="text-lg font-semibold">Engineering Memory</h2>
             {historyLoading ? (

@@ -6,6 +6,7 @@ import {
   listEngineeringSessions,
   logEngineeringGap,
   saveEngineeringSession,
+  semanticSearchEngineeringKnowledge,
   upsertEngineeringMemory,
 } from "../services/engineeringAssistant.service.js";
 
@@ -75,6 +76,24 @@ export async function getProjectSession(req, res, next) {
     }
 
     return res.json({ session });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function semanticSearch(req, res, next) {
+  try {
+    const { q = "", limit = 10 } = req.query;
+    if (!String(q).trim()) {
+      return res.status(400).json({ message: "Query is required" });
+    }
+
+    const result = await semanticSearchEngineeringKnowledge({
+      queryText: q,
+      limit: Math.min(Number(limit) || 10, 25),
+    });
+
+    return res.json(result);
   } catch (error) {
     return next(error);
   }
