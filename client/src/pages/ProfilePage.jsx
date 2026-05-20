@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -92,8 +95,7 @@ export default function ProfilePage() {
     <section className="space-y-6 fade-in">
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <article className="card relative overflow-hidden">
-        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-neon/10 blur-3xl" />
+      <Card className="relative overflow-hidden" accent>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted">Reputation Profile</p>
@@ -109,17 +111,17 @@ export default function ProfilePage() {
 
         <div className="mt-5 flex flex-wrap gap-2">
           {(profile?.user?.skills || user?.skills || []).map((skill) => (
-            <span key={skill} className="rounded-full bg-neon/10 px-3 py-1 text-xs text-neon">
+            <Badge key={skill} tone="neon" className="px-3 py-1 text-xs">
               {skill}
-            </span>
+            </Badge>
           ))}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {badges.map((badge) => (
-            <span key={badge} className="rounded-full border border-white/10 bg-surface/80 px-3 py-1 text-xs text-text/80">
+            <Badge key={badge} className="px-3 py-1 text-xs">
               {badge}
-            </span>
+            </Badge>
           ))}
         </div>
 
@@ -133,11 +135,11 @@ export default function ProfilePage() {
               placeholder="React, Node.js, PostgreSQL"
             />
           </label>
-          <button className="btn-secondary h-11" type="submit">
+          <Button variant="secondary" className="h-11" type="submit">
             Save Skills
-          </button>
+          </Button>
         </form>
-      </article>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Tasks Completed" value={analytics.tasks_completed} tone="emerald" />

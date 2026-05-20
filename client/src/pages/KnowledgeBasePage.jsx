@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const initialArticleForm = {
   title: "",
@@ -316,9 +319,9 @@ export default function KnowledgeBasePage() {
               <p className="mt-1 text-sm text-text/70">Curated guides, workflows, and platform know-how.</p>
             </div>
             {isAuthenticated && (
-              <button className="btn-primary text-sm" onClick={() => setShowCreateForm((prev) => !prev)}>
+              <Button className="text-sm" onClick={() => setShowCreateForm((prev) => !prev)}>
                 {showCreateForm ? "Close" : "New Article"}
-              </button>
+              </Button>
             )}
           </div>
 
@@ -337,9 +340,9 @@ export default function KnowledgeBasePage() {
                 </option>
               ))}
             </select>
-            <button type="button" className="btn-secondary" onClick={() => loadKnowledgeBase()}>
+            <Button variant="secondary" type="button" onClick={() => loadKnowledgeBase()}>
               Filter
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -395,9 +398,7 @@ export default function KnowledgeBasePage() {
               onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
               required
             />
-            <button type="submit" className="btn-primary">
-              Save Draft
-            </button>
+            <Button type="submit">Save Draft</Button>
           </form>
         )}
 
@@ -423,7 +424,7 @@ export default function KnowledgeBasePage() {
                   <span>{article.difficulty}</span>
                   <span>•</span>
                   <span>{article.read_time_minutes || 1} min read</span>
-                  {article.featured && <span className="rounded-full bg-neon/15 px-2 py-0.5 text-neon">Featured</span>}
+                  {article.featured && <Badge tone="neon" className="px-2 py-0.5">Featured</Badge>}
                   <span
                     className={`rounded-full px-2 py-0.5 ${
                       article.confidence_status === "VERIFIED"
@@ -440,9 +441,7 @@ export default function KnowledgeBasePage() {
                 <p className="mt-1 text-sm text-text/70 line-clamp-2">{article.summary}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
                   {(article.tags || []).slice(0, 4).map((tag) => (
-                    <span key={tag} className="rounded-full bg-white/5 px-2 py-1">
-                      #{tag}
-                    </span>
+                    <Badge key={tag} className="px-2 py-1">#{tag}</Badge>
                   ))}
                 </div>
               </button>
@@ -480,38 +479,22 @@ export default function KnowledgeBasePage() {
                 {canEditArticle && (
                   <div className="flex flex-wrap gap-2">
                     {selectedArticle.status === "PUBLISHED" ? (
-                      <button className="btn-secondary text-sm" onClick={() => handleUnpublishArticle(selectedArticle.id)}>
+                      <Button variant="secondary" className="text-sm" onClick={() => handleUnpublishArticle(selectedArticle.id)}>
                         Unpublish
-                      </button>
+                      </Button>
                     ) : (
-                      <button className="btn-primary text-sm" onClick={() => handlePublishArticle(selectedArticle.id)}>
+                      <Button className="text-sm" onClick={() => handlePublishArticle(selectedArticle.id)}>
                         Publish
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="btn-ghost text-sm"
-                    onClick={() => handleVote(selectedArticle.id, 'UP')}
-                  >
-                    👍
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-ghost text-sm"
-                    onClick={() => handleVote(selectedArticle.id, 'DOWN')}
-                  >
-                    👎
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-secondary text-sm ${selectedArticle.bookmarked_by_user ? 'bg-neon/10' : ''}`}
-                    onClick={() => handleToggleBookmark(selectedArticle.id)}
-                  >
+                  <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'UP')}>👍</Button>
+                  <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'DOWN')}>👎</Button>
+                  <Button variant="secondary" className={`${selectedArticle.bookmarked_by_user ? 'bg-neon/10' : ''}`} onClick={() => handleToggleBookmark(selectedArticle.id)}>
                     {selectedArticle.bookmarked_by_user ? 'Bookmarked' : 'Bookmark'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
