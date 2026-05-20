@@ -28,6 +28,7 @@
 
 html {
   background: #0D1117;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -75,6 +76,13 @@ body::before {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 22px 54px rgba(2, 6, 23, 0.68);
 }
 
 .card::before {
@@ -98,22 +106,22 @@ body::before {
 }
 
 .input {
-  @apply w-full rounded-xl border border-white/10 bg-obsidian/80 px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-neon/50;
+  @apply w-full rounded-xl border border-white/10 bg-obsidian/80 px-3 py-2 text-sm text-text placeholder:text-muted transition focus:outline-none focus:ring-2 focus:ring-neon/50 focus-visible:border-neon/50 focus-visible:ring-neon/60;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .btn {
-  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition;
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian;
   letter-spacing: 0.02em;
 }
 
 .btn-primary {
-  @apply btn bg-neon text-obsidian hover:bg-neon/90;
+  @apply btn bg-neon text-obsidian hover:-translate-y-0.5 hover:bg-neon/90;
   box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.35), 0 16px 32px rgba(0, 255, 102, 0.12);
 }
 
 .btn-secondary {
-  @apply btn bg-surface border border-white/10 text-text hover:border-neon/40 hover:bg-surface/80;
+  @apply btn bg-surface border border-white/10 text-text hover:-translate-y-0.5 hover:border-neon/40 hover:bg-surface/80;
 }
 
 .page-shell {
@@ -162,6 +170,12 @@ body::before {
   @apply rounded-[1.6rem] border border-white/10 bg-surface/80 p-6 shadow-card backdrop-blur-sm;
   position: relative;
   overflow: hidden;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.hero-panel:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .hero-panel::after {
@@ -215,6 +229,15 @@ body::before {
 
 .fade-in {
   animation: fade-in 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 [class*="bg-ink"] {
@@ -333,6 +356,10 @@ body::before {
 @media (max-width: 900px) {
   .hero-frame {
     grid-template-columns: 1fr;
+  }
+
+  .page-shell::before {
+    width: min(100vw - 1rem, 72rem);
   }
 }
 

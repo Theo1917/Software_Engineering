@@ -3,10 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
 
 function navClass({ isActive }) {
-  return `px-3 py-2 rounded-full text-sm transition ${
+  return `px-3 py-2 rounded-full text-sm transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian ${
     isActive
       ? "bg-neon text-obsidian shadow-[0_0_18px_rgba(0,255,102,0.28)]"
-      : "text-text/75 hover:bg-surface/80 hover:text-text"
+      : "text-text/75 hover:bg-surface/80 hover:text-text hover:-translate-y-0.5"
   }`;
 }
 
@@ -18,7 +18,7 @@ export default function NavBar() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-1 rounded-full bg-gradient-to-b from-neon to-danger" />
-          <Link to="/" className="leading-none">
+          <Link to="/" className="leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian rounded-lg">
             <p className="text-xs uppercase tracking-[0.28em] text-muted">Community Forum</p>
             <p className="mt-1 text-lg font-bold tracking-tight text-text">Amrita Community Forum</p>
           </Link>
@@ -28,7 +28,7 @@ export default function NavBar() {
           A place to build, review, and ship work with intent
         </div>
 
-        <nav className="flex flex-wrap items-center gap-2 xl:justify-end">
+        <nav className="flex w-full flex-wrap items-center gap-2 overflow-x-auto pb-1 xl:w-auto xl:justify-end xl:overflow-visible xl:pb-0">
           <NavLink to="/" className={navClass}>
             Home
           </NavLink>

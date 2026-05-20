@@ -25,7 +25,7 @@ export default function Input({
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={describedBy}
         required={required}
-        className={`input ${inputClassName} ${error ? "border-danger focus:ring-danger/50" : ""}`}
+        className={`input ${inputClassName} ${error ? "border-danger focus:ring-danger/50 focus-visible:border-danger" : ""}`}
         {...props}
       />
       {hint && !error && (
