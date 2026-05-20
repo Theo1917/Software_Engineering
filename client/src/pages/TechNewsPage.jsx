@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 
 const categories = ["All", "Web Development", "AI", "Cloud", "Security", "Mobile", "DevOps"];
 
@@ -37,33 +40,33 @@ export default function TechNewsPage() {
   return (
     <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] fade-in">
       <div className="space-y-4">
-        <article className="card">
+        <Card>
           <h1 className="text-2xl font-semibold">Tech News Feed</h1>
           <p className="text-sm text-text/70 mt-1">Sprint 1 category-filtered feed powered by the Sprint 2 discussion backend.</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {categories.map((item) => (
-              <button
+              <Button
                 key={item}
-                className={item === category ? "btn-primary" : "btn-secondary"}
+                variant={item === category ? "primary" : "secondary"}
                 onClick={() => handleCategoryChange(item)}
               >
                 {item}
-              </button>
+              </Button>
             ))}
           </div>
-        </article>
+        </Card>
 
         <div className="space-y-3">
           {posts.map((post) => (
-            <article key={post.id} className="card">
+            <Card key={post.id}>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">{post.title}</h2>
-                <span className="text-xs px-2 py-1 rounded-full bg-danger/15 text-danger">{post.category}</span>
+                  <Badge tone="pink" className="text-xs px-2 py-1">{post.category}</Badge>
               </div>
               <p className="text-sm text-text/80 mt-2">{post.content}</p>
               <p className="text-xs text-text/60 mt-2">By {post.author_name}</p>
-            </article>
+            </Card>
           ))}
           {posts.length === 0 && <p className="text-sm text-text/60">No posts in this category yet.</p>}
         </div>
@@ -75,12 +78,12 @@ export default function TechNewsPage() {
 
         <div className="mt-4 space-y-3">
           {trending.map((post) => (
-            <div key={post.id} className="rounded-xl border border-white/10 p-3 bg-surface/80">
+            <Card key={post.id} className="rounded-xl p-3 bg-surface/80">
               <p className="text-sm font-medium">{post.title}</p>
               <p className="text-xs text-text/60 mt-1">
                 Score: {post.score} | Comments: {post.comment_count}
               </p>
-            </div>
+            </Card>
           ))}
           {trending.length === 0 && <p className="text-sm text-text/60">No trending data yet.</p>}
         </div>

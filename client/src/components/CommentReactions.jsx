@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react';
+import Button from "./Button";
+import Card from "./Card";
+import Badge from "./Badge";
 
 const EMOJI_REACTIONS = ['👍', '🎉', '❤️', '😂', '🔥', '💯'];
 
@@ -78,7 +81,7 @@ export function CommentReactionsBar({ commentId, onEdit, onReply, canEdit }) {
     <div className="flex items-center gap-1 mt-3 flex-wrap">
       {/* Existing Reactions */}
       {Object.entries(reactions).map(([emoji, data]) => (
-        <button
+        <Button
           key={emoji}
           onClick={() => userReactions[emoji] ? removeReaction(emoji) : addReaction(emoji)}
           className={`px-2 py-1 rounded-full text-sm transition flex items-center gap-1 ${
@@ -89,49 +92,49 @@ export function CommentReactionsBar({ commentId, onEdit, onReply, canEdit }) {
         >
           <span>{emoji}</span>
           <span className="text-xs font-medium">{data.count}</span>
-        </button>
+        </Button>
       ))}
 
       {/* Add Reaction Button */}
       <div className="relative">
-        <button
+        <Button
           onClick={() => setShowPicker(!showPicker)}
           className="px-2 py-1 rounded-full text-sm bg-[#0f172a] border border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400 transition"
         >
           +
-        </button>
+        </Button>
 
         {showPicker && (
           <div className="absolute top-full left-0 mt-2 z-20 bg-[#1a1f3a] border border-cyan-500/30 rounded-lg p-2 flex gap-1 shadow-lg">
             {EMOJI_REACTIONS.map(emoji => (
-              <button
+              <Button
                 key={emoji}
                 onClick={() => addReaction(emoji)}
                 className="text-xl hover:scale-125 transition cursor-pointer"
               >
                 {emoji}
-              </button>
+              </Button>
             ))}
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      <button
+      <Button
         onClick={onReply}
         className="ml-2 px-2 py-1 rounded text-sm text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition flex items-center gap-1"
       >
         <MessageCircle className="w-3 h-3" />
         <span className="text-xs">Reply</span>
-      </button>
+      </Button>
 
       {canEdit && (
-        <button
+        <Button
           onClick={onEdit}
           className="px-2 py-1 rounded text-sm text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition flex items-center gap-1"
         >
           <span className="text-xs">Edit</span>
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -142,13 +145,13 @@ export function ReactionsDisplay({ commentId, reactions = [] }) {
   return (
     <div className="flex flex-wrap gap-2 mt-2">
       {reactions.map((r, idx) => (
-        <div
+        <Card
           key={idx}
           className="bg-[#0f172a] border border-cyan-500/20 rounded-full px-3 py-1 flex items-center gap-2 group cursor-pointer hover:border-cyan-500/50 transition"
         >
           <span className="text-lg">{r.reaction_type}</span>
           <span className="text-xs text-gray-400 group-hover:text-gray-300">{r.count}</span>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -225,12 +228,12 @@ export function CommentEditHistory({ commentId, isOpen, onClose }) {
       <div className="bg-[#1a1f3a] border border-cyan-500/30 rounded-lg max-w-2xl w-full max-h-96 overflow-auto">
         <div className="sticky top-0 bg-[#1a1f3a] border-b border-cyan-500/20 p-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-cyan-400">Edit History</h2>
-          <button
+          <Button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-300"
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="p-4 space-y-4">
