@@ -3,10 +3,12 @@ import { requireAuth } from "../middleware/auth.js";
 import {
   addKnowledgeBaseLink,
   listKnowledgeBaseGaps,
+  updateKnowledgeBaseGap,
   voteKnowledgeBaseArticle,
   addKnowledgeBaseBookmark,
   removeKnowledgeBaseBookmark,
   addKnowledgeBaseRelation,
+  convertKnowledgeBaseGapToArticle,
   createKnowledgeBaseArticle,
   deleteKnowledgeBaseArticle,
   getKnowledgeBaseArticle,

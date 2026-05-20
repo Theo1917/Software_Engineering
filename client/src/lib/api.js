@@ -15,3 +15,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+export async function apiCall(url, options = {}) {
+  const method = String(options.method || "GET").toLowerCase();
+  const data = options.body;
+
+  const response = await api.request({
+    url,
+    method,
+    data,
+  });
+
+  return response.data;
+}

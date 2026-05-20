@@ -163,7 +163,6 @@ export default function AdvancedSearchPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tasks, posts, people, skills..."
               placeholder="Search tasks, discussions, people, knowledge base, and skills..."
               className="w-full pl-12 pr-4 py-3 bg-[#1a1f3a] text-white placeholder-gray-500 rounded-lg border border-cyan-500/30 focus:border-cyan-500 focus:outline-none transition"
             />

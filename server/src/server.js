@@ -1,9 +1,13 @@
 import app from "./app.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { readFile } from "fs/promises";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { pool } from "./config/db.js";
 
 const port = Number(process.env.PORT || 5000);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -31,12 +35,44 @@ async function archiveClosedTasks() {
 }
 
 async function ensureSchema() {
-  try {
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;");
-    console.log('DB migration: ensured is_admin column exists');
-  } catch (error) {
-    console.error('DB migration error:', error);
+  const schemaPath = resolve(__dirname, "../db/schema.sql");
+  const rawSql = await readFile(schemaPath, "utf8");
+
+  // Run statements one-by-one so we can ignore duplicate enum type creation in existing DBs.
+  const statements = rawSql
+    .split(/;\s*(?:\r?\n|$)/)
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+
+  for (const statement of statements) {
+    try {
+      await pool.query(statement);
+    } catch (error) {
+      const isCreateType = /^CREATE\s+TYPE\b/i.test(statement);
+      const isCreateIndex = /^CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(statement);
+      const isDuplicateObject = error?.code === "42710" || /already exists/i.test(error?.message || "");
+      const isMissingDependency = error?.code === "42P01" || error?.code === "42703";
+
+      if (isCreateType && isDuplicateObject) {
+        continue;
+      }
+
+      // Legacy DBs can miss some columns/tables referenced by optional indexes.
+      if (isCreateIndex && isMissingDependency) {
+        continue;
+      }
+
+      throw error;
+    }
   }
+
+  // Backfill key columns for older task/user schemas used by newer routes.
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE");
+  await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_solver_id INTEGER REFERENCES users(id) ON DELETE SET NULL");
+  await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()");
+  await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE");
+
+  console.log("DB migration: schema ensured from schema.sql");
 }
 
 io.on("connection", (socket) => {
