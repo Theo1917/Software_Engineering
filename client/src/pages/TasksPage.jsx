@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
+import Input from "../components/Input";
 
 const initialTaskForm = {
   title: "",
@@ -27,6 +28,7 @@ export default function TasksPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialTaskForm);
+  const [submitted, setSubmitted] = useState(false);
   const [filters, setFilters] = useState({ skill: "", difficulty: "", minBudget: "", maxBudget: "" });
   const [search, setSearch] = useState("");
   const [teams, setTeams] = useState([]);
@@ -128,7 +130,13 @@ export default function TasksPage() {
 
   async function handleCreateTask(event) {
     event.preventDefault();
+    setSubmitted(true);
     setError("");
+
+    if (!form.title.trim() || !form.description.trim() || !form.budget || !form.deadline) {
+      setError("Please complete the required task fields.");
+      return;
+    }
 
     try {
       await api.post("/tasks", {
@@ -182,38 +190,42 @@ export default function TasksPage() {
         <p className="text-sm text-text/70 mt-1">Open opportunities from the community.</p>
 
         <div className="grid gap-2 sm:grid-cols-5 mt-4">
-          <input
-            className="input sm:col-span-2"
+          <Input
+            className="sm:col-span-2"
+            label="Search tasks"
             placeholder="Search title, description, or tech stack"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <input
-            className="input"
+          <Input
+            label="Skill"
             placeholder="Skill"
             value={filters.skill}
             onChange={(event) => setFilters((prev) => ({ ...prev, skill: event.target.value }))}
           />
-          <select
-            className="input"
-            value={filters.difficulty}
-            onChange={(event) => setFilters((prev) => ({ ...prev, difficulty: event.target.value }))}
-          >
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-text">Difficulty</span>
+            <select
+              className="input"
+              value={filters.difficulty}
+              onChange={(event) => setFilters((prev) => ({ ...prev, difficulty: event.target.value }))}
+            >
             <option value="">Any Difficulty</option>
             <option value="BEGINNER">Beginner</option>
             <option value="INTERMEDIATE">Intermediate</option>
             <option value="ADVANCED">Advanced</option>
-          </select>
-          <input
-            className="input"
+            </select>
+          </label>
+          <Input
+            label="Min budget"
             type="number"
             min="0"
             placeholder="Min Budget"
             value={filters.minBudget}
             onChange={(event) => setFilters((prev) => ({ ...prev, minBudget: event.target.value }))}
           />
-          <input
-            className="input"
+          <Input
+            label="Max budget"
             type="number"
             min="0"
             placeholder="Max Budget"
@@ -231,64 +243,77 @@ export default function TasksPage() {
       {isAuthenticated && (
         <form onSubmit={handleCreateTask} className="card space-y-3">
           <h2 className="text-lg font-semibold">Create Task</h2>
-          <input
-            className="input"
+          <Input
+            label="Task title"
             placeholder="Title"
             value={form.title}
             onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+            error={submitted && !form.title.trim() ? "Title is required" : ""}
             required
           />
-          <textarea
-            className="input min-h-24"
+          <Input
+            as="textarea"
+            label="Description"
+            inputClassName="min-h-24"
             placeholder="Description"
             value={form.description}
             onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+            error={submitted && !form.description.trim() ? "Description is required" : ""}
             required
           />
-          <input
-            className="input"
+          <Input
+            label="Tech stack"
             placeholder="Tech Stack (comma separated)"
             value={form.techStack}
             onChange={(event) => setForm((prev) => ({ ...prev, techStack: event.target.value }))}
+            hint="Optional. Separate technologies with commas."
           />
           <div className="grid gap-3 sm:grid-cols-4">
-            <select
-              className="input"
-              value={form.difficulty}
-              onChange={(event) => setForm((prev) => ({ ...prev, difficulty: event.target.value }))}
-            >
-              <option value="BEGINNER">Beginner</option>
-              <option value="INTERMEDIATE">Intermediate</option>
-              <option value="ADVANCED">Advanced</option>
-            </select>
-            <input
-              className="input"
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-text">Difficulty</span>
+              <select
+                className="input"
+                value={form.difficulty}
+                onChange={(event) => setForm((prev) => ({ ...prev, difficulty: event.target.value }))}
+              >
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+              </select>
+            </label>
+            <Input
+              label="Budget"
               type="number"
               min="0"
               placeholder="Budget"
               value={form.budget}
               onChange={(event) => setForm((prev) => ({ ...prev, budget: event.target.value }))}
+              error={submitted && !form.budget ? "Budget is required" : ""}
               required
             />
-            <input
-              className="input"
+            <Input
+              label="Deadline"
               type="date"
               value={form.deadline}
               onChange={(event) => setForm((prev) => ({ ...prev, deadline: event.target.value }))}
+              error={submitted && !form.deadline ? "Deadline is required" : ""}
               required
             />
-            <select
-              className="input"
-              value={form.teamId || ""}
-              onChange={(event) => setForm((prev) => ({ ...prev, teamId: event.target.value || null }))}
-            >
-              <option value="">Personal Task</option>
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </select>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-text">Team</span>
+              <select
+                className="input"
+                value={form.teamId || ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, teamId: event.target.value || null }))}
+              >
+                <option value="">Personal Task</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <Button variant="primary" type="submit">Publish Task</Button>

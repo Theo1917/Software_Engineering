@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import Input from "../components/Input";
 
 export default function SubmissionPage() {
   const { taskId } = useParams();
@@ -12,6 +13,7 @@ export default function SubmissionPage() {
   const [submissionNotes, setSubmissionNotes] = useState("");
   const [fileUrl, setFileUrl] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -25,6 +27,7 @@ export default function SubmissionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitted(true);
 
     if (!submissionNotes.trim() && !fileUrl) {
       setError("Please add submission notes or upload a file");
@@ -58,10 +61,10 @@ export default function SubmissionPage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form noValidate onSubmit={handleSubmit} className="card space-y-4">
         {/* File Upload */}
         <div>
-          <label className="block text-sm font-medium mb-2">Upload Files</label>
+          <label className="block text-sm font-medium mb-2" htmlFor="file-upload">Upload Files</label>
           <div className="border-2 border-dashed border-white/10 rounded-lg p-6 text-center hover:border-neon/40 transition bg-white/5">
             <input
               type="file"
@@ -87,15 +90,17 @@ export default function SubmissionPage() {
         </div>
 
         {/* Submission Notes */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Completion Notes *</label>
-          <textarea
-            value={submissionNotes}
-            onChange={(e) => setSubmissionNotes(e.target.value)}
-            placeholder="Describe what you've completed, any challenges, and additional notes..."
-            className="w-full h-40 px-3 py-2 border border-white/10 rounded-lg text-sm bg-surface/80 text-text focus:outline-none focus:ring-2 focus:ring-neon/50"
-          />
-        </div>
+        <Input
+          as="textarea"
+          label="Completion notes"
+          required
+          inputClassName="min-h-40"
+          value={submissionNotes}
+          onChange={(e) => setSubmissionNotes(e.target.value)}
+          placeholder="Describe what you've completed, any challenges, and additional notes..."
+          error={submitted && !submissionNotes.trim() && !fileUrl ? "Add notes or upload a file." : ""}
+          hint="Required if you don't upload a file."
+        />
 
         {/* Submit Buttons */}
         <div className="flex gap-3 pt-4">

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Button from "../components/Button";
+import Input from "../components/Input";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -9,9 +11,11 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", skills: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setSubmitted(true);
     setError("");
     setLoading(true);
 
@@ -38,44 +42,48 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-semibold">Register</h1>
       <p className="text-sm text-text/70 mt-1">Create your community account</p>
 
-      <form onSubmit={handleSubmit} className="space-y-3 mt-5">
-        <input
-          className="input"
+      <form noValidate onSubmit={handleSubmit} className="space-y-3 mt-5">
+        <Input
+          label="Name"
           type="text"
-          placeholder="Name"
+          autoComplete="name"
           value={form.name}
           onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+          error={submitted && !form.name ? "Name is required" : ""}
           required
         />
-        <input
-          className="input"
+        <Input
+          label="Email"
           type="email"
-          placeholder="Email"
+          autoComplete="email"
           value={form.email}
           onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+          error={submitted && !form.email ? "Email is required" : ""}
           required
         />
-        <input
-          className="input"
+        <Input
+          label="Password"
           type="password"
-          placeholder="Password"
+          autoComplete="new-password"
           value={form.password}
           onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+          error={submitted && !form.password ? "Password is required" : ""}
           required
         />
-        <input
-          className="input"
+        <Input
+          label="Skills"
           type="text"
-          placeholder="Skills (comma separated)"
+          autoComplete="off"
           value={form.skills}
           onChange={(event) => setForm((prev) => ({ ...prev, skills: event.target.value }))}
+          hint="Optional. Separate skills with commas."
         />
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <button className="btn-primary w-full" disabled={loading}>
+        <Button className="btn-primary w-full" type="submit" disabled={loading}>
           {loading ? "Creating account..." : "Register"}
-        </button>
+        </Button>
       </form>
 
       <p className="text-sm mt-4 text-text/75">
