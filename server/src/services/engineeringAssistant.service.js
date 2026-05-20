@@ -1,6 +1,7 @@
 import AdmZip from "adm-zip";
 import { createHash } from "crypto";
 import { pool } from "../config/db.js";
+import { vectorSearch } from "./semantic.service.js";
 
 const TEXT_EXTENSIONS = new Set([
   ".txt",
@@ -1245,7 +1246,40 @@ export async function semanticSearchEngineeringKnowledge({ queryText = "", limit
   if (!query) {
     return { sessions: [], memory: [] };
   }
+  // If OpenAI key is configured, prefer vector search over heuristics
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const vectorResults = await vectorSearch({ queryText: query, limit: Math.min(limit, 25) });
+      // map engineering_knowledge rows into sessions-like results
+      const sessions = vectorResults.map((row) => ({
+        id: row.id,
+        title: row.title || row.source_type,
+        summary: row.content ? row.content.slice(0, 280) : "",
+        created_at: row.created_at,
+        score: row.similarity,
+        deployment_platform: row.deployment_platform,
+        framework: row.framework,
+      }));
 
+      // still return memory from engineering_memory as a fallback
+      const memoryResult = await pool.query(
+        `SELECT id, issue_type, stack_signature, root_cause, fix_summary, occurrence_count, last_seen_at
+         FROM engineering_memory
+         ORDER BY occurrence_count DESC, last_seen_at DESC
+         LIMIT $1`,
+        [Math.min(limit, 50)]
+      );
+
+      const memory = memoryResult.rows.map((item) => ({ ...item, score: 0 }));
+
+      return { sessions, memory };
+    } catch (err) {
+      // fall through to lexical/heuristic fallback
+      console.error("Vector search error:", err?.message || err);
+    }
+  }
+
+  // Fallback: original blended lexical + heuristic search
   const sessionResult = await pool.query(
     `SELECT id, title, query_text, deployment_platform, summary, root_cause, fix_plan, detected_stack, created_at
      FROM engineering_sessions

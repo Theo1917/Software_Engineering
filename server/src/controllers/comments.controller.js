@@ -1,6 +1,7 @@
 import { pool as db } from "../config/db.js";
 import { createNotification } from "./notifications.controller.js";
 import { updateUserAnalytics } from "./analytics.controller.js";
+import { indexKnowledgeItem } from "../services/semantic.service.js";
 
 // Add comment with optional threading support
 export async function addComment(postId, authorId, content, parentCommentId = null) {
@@ -39,6 +40,20 @@ export async function addComment(postId, authorId, content, parentCommentId = nu
       throw new Error("Failed to add comment");
     }
 
+    // Async: index comment into engineering knowledge
+    try {
+      indexKnowledgeItem({
+        source_type: "comment",
+        source_id: result.rows[0].id,
+        title: `Comment on post ${postId}`,
+        content: result.rows[0].content,
+        tags: [],
+        metadata: { post_id: postId, author_id: authorId },
+      }).catch((err) => console.error("Index comment error:", err?.message || err));
+    } catch (err) {
+      console.error("Indexing comment failed:", err?.message || err);
+    }
+
     await updateUserAnalytics(authorId);
 
     const postAuthor = await db.query("SELECT author_id, title FROM posts WHERE id = $1", [postId]);
@@ -66,6 +81,21 @@ export async function addComment(postId, authorId, content, parentCommentId = nu
     return result.rows[0];
   } catch (error) {
     console.error("Error adding comment:", error);
+    // Best-effort indexing for comment if DB insertion succeeded earlier
+    try {
+      if (error?.insertedCommentPayload) {
+        indexKnowledgeItem({
+          source_type: "comment",
+          source_id: error.insertedCommentPayload.id,
+          title: `Comment on post ${error.insertedCommentPayload.post_id}`,
+          content: error.insertedCommentPayload.content,
+          tags: [],
+          metadata: { post_id: error.insertedCommentPayload.post_id, author_id: error.insertedCommentPayload.author_id },
+        }).catch((err) => console.error("Index comment (error path) failed:", err));
+      }
+    } catch (e) {
+      // swallow
+    }
     throw error;
   }
 }

@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { indexKnowledgeItem } from "../services/semantic.service.js";
 import { createNotification } from "./notifications.controller.js";
 import { updateUserAnalytics } from "./analytics.controller.js";
 
@@ -168,6 +169,20 @@ export async function createPost(req, res, next) {
 
     await updateUserAnalytics(req.user.id);
 
+    // Async: index post into engineering knowledge (best-effort)
+    try {
+      indexKnowledgeItem({
+        source_type: "post",
+        source_id: result.rows[0].id,
+        title: result.rows[0].title,
+        content: result.rows[0].content,
+        tags: result.rows[0].tags || [],
+        metadata: { author_id: req.user.id, category },
+      }).catch((err) => console.error("Index post error:", err?.message || err));
+    } catch (err) {
+      console.error("Indexing post failed:", err?.message || err);
+    }
+
     return res.status(201).json({ post: result.rows[0] });
   } catch (error) {
     return next(error);
@@ -263,6 +278,20 @@ export async function addComment(req, res, next) {
     }
 
     await updateUserAnalytics(req.user.id);
+
+    // Async: index comment into engineering knowledge
+    try {
+      indexKnowledgeItem({
+        source_type: "comment",
+        source_id: result.rows[0].id,
+        title: `Comment on post ${id}`,
+        content: result.rows[0].content,
+        tags: [],
+        metadata: { post_id: id, author_id: req.user.id },
+      }).catch((err) => console.error("Index comment error:", err?.message || err));
+    } catch (err) {
+      console.error("Indexing comment failed:", err?.message || err);
+    }
 
     return res.status(201).json({ comment: result.rows[0] });
   } catch (error) {

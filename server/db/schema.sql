@@ -398,6 +398,29 @@ CREATE TABLE IF NOT EXISTS team_analytics (
 
 -- Update comments table for threaded replies
 ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE;
+
+-- pgvector: embeddings storage for engineering knowledge
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS engineering_knowledge (
+  id SERIAL PRIMARY KEY,
+  source_type VARCHAR(60) NOT NULL,
+  source_id INTEGER,
+  title VARCHAR(300),
+  content TEXT NOT NULL,
+  embedding vector(1536),
+  tags TEXT[] DEFAULT '{}',
+  deployment_platform VARCHAR(80),
+  framework VARCHAR(120),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ivfflat index accelerates nearest-neighbor searches (create after bulk insert for best results)
+CREATE INDEX IF NOT EXISTS idx_engineering_knowledge_embedding ON engineering_knowledge USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+CREATE INDEX IF NOT EXISTS idx_engineering_knowledge_platform ON engineering_knowledge(deployment_platform);
+CREATE INDEX IF NOT EXISTS idx_engineering_knowledge_framework ON engineering_knowledge(framework);
 ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_author_name VARCHAR(120);
 ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_html TEXT;
 ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT FALSE;

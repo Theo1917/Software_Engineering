@@ -9,6 +9,7 @@ import {
   semanticSearchEngineeringKnowledge,
   upsertEngineeringMemory,
 } from "../services/engineeringAssistant.service.js";
+import { indexKnowledgeItem } from "../services/semantic.service.js";
 
 export async function analyzeProjectData(req, res, next) {
   try {
@@ -94,6 +95,19 @@ export async function semanticSearch(req, res, next) {
     });
 
     return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function indexKnowledge(req, res, next) {
+  try {
+    const { source_type, source_id, title, content, tags, deployment_platform, framework, metadata } = req.body;
+    if (!content) return res.status(400).json({ message: "content is required" });
+
+    const row = await indexKnowledgeItem({ source_type: source_type || "UNKNOWN", source_id, title, content, tags: tags || [], deployment_platform, framework, metadata: metadata || {} });
+
+    return res.status(201).json({ item: row });
   } catch (error) {
     return next(error);
   }

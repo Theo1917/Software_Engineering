@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { indexKnowledgeItem } from "../services/semantic.service.js";
 
 function toSlug(value) {
   return value
@@ -602,6 +603,24 @@ export async function publishKnowledgeBaseArticle(req, res, next) {
        RETURNING *`,
       [id]
     );
+
+    // Async: index the published article into engineering knowledge
+    try {
+      const article = result.rows[0];
+      indexKnowledgeItem({
+        source_type: "kb_article",
+        source_id: article.id,
+        title: article.title,
+        content: article.content,
+        tags: (await (async () => {
+          const t = await pool.query("SELECT ARRAY_AGG(tag) AS tags FROM kb_article_tags WHERE article_id = $1", [article.id]);
+          return t.rows[0]?.tags || [];
+        })()),
+        metadata: { author_id: article.author_id, category_id: article.category_id },
+      }).catch((err) => console.error("Index KB article error:", err?.message || err));
+    } catch (err) {
+      console.error("Indexing KB article failed:", err?.message || err);
+    }
 
     return res.json({ article: result.rows[0] });
   } catch (error) {
