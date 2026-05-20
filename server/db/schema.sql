@@ -159,6 +159,102 @@ CREATE TABLE IF NOT EXISTS disputes (
   resolved_at TIMESTAMP WITH TIME ZONE
 );
 
+-- Knowledge Base
+CREATE TABLE IF NOT EXISTS kb_categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  slug VARCHAR(140) NOT NULL UNIQUE,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS kb_articles (
+  id SERIAL PRIMARY KEY,
+  category_id INTEGER REFERENCES kb_categories(id) ON DELETE SET NULL,
+  author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(220) NOT NULL,
+  slug VARCHAR(260) NOT NULL UNIQUE,
+  summary TEXT,
+  content TEXT NOT NULL,
+  content_format VARCHAR(30) NOT NULL DEFAULT 'MARKDOWN',
+  status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+  visibility VARCHAR(30) NOT NULL DEFAULT 'PUBLIC',
+  difficulty VARCHAR(30) DEFAULT 'BEGINNER',
+  read_time_minutes INTEGER DEFAULT 0,
+  view_count INTEGER NOT NULL DEFAULT 0,
+  vote_score INTEGER NOT NULL DEFAULT 0,
+  featured BOOLEAN NOT NULL DEFAULT FALSE,
+  published_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_tags (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  tag VARCHAR(80) NOT NULL,
+  UNIQUE (article_id, tag)
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_revisions (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  editor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  previous_title VARCHAR(220) NOT NULL,
+  previous_summary TEXT,
+  previous_content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_votes (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  vote_type vote_type NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (article_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_bookmarks (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (article_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_relations (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  related_article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  relation_type VARCHAR(40) NOT NULL DEFAULT 'RELATED',
+  UNIQUE (article_id, related_article_id, relation_type)
+);
+
+CREATE TABLE IF NOT EXISTS kb_article_links (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES kb_articles(id) ON DELETE CASCADE,
+  entity_type VARCHAR(40) NOT NULL,
+  entity_id INTEGER NOT NULL,
+  entity_label VARCHAR(220),
+  relation_type VARCHAR(40) NOT NULL DEFAULT 'RELATED',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (article_id, entity_type, entity_id, relation_type)
+);
+
+CREATE TABLE IF NOT EXISTS kb_search_gaps (
+  id SERIAL PRIMARY KEY,
+  query_text TEXT NOT NULL,
+  normalized_query VARCHAR(255) NOT NULL,
+  source VARCHAR(40) NOT NULL DEFAULT 'SEARCH',
+  result_count INTEGER NOT NULL DEFAULT 0,
+  occurrence_count INTEGER NOT NULL DEFAULT 1,
+  status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
+  last_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+
 CREATE INDEX IF NOT EXISTS idx_tasks_creator ON tasks(creator_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_difficulty ON tasks(difficulty);
@@ -179,6 +275,18 @@ CREATE INDEX IF NOT EXISTS idx_saved_posts_user ON saved_posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_saved_posts_post ON saved_posts(post_id);
 CREATE INDEX IF NOT EXISTS idx_disputes_task ON disputes(task_id);
 CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status);
+CREATE INDEX IF NOT EXISTS idx_kb_articles_category ON kb_articles(category_id);
+CREATE INDEX IF NOT EXISTS idx_kb_articles_author ON kb_articles(author_id);
+CREATE INDEX IF NOT EXISTS idx_kb_articles_status ON kb_articles(status);
+CREATE INDEX IF NOT EXISTS idx_kb_articles_visibility ON kb_articles(visibility);
+CREATE INDEX IF NOT EXISTS idx_kb_articles_featured ON kb_articles(featured);
+CREATE INDEX IF NOT EXISTS idx_kb_article_tags_article ON kb_article_tags(article_id);
+CREATE INDEX IF NOT EXISTS idx_kb_article_votes_article ON kb_article_votes(article_id);
+CREATE INDEX IF NOT EXISTS idx_kb_article_bookmarks_user ON kb_article_bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_kb_article_links_article ON kb_article_links(article_id);
+CREATE INDEX IF NOT EXISTS idx_kb_article_links_entity ON kb_article_links(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_kb_search_gaps_status ON kb_search_gaps(status, last_seen_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_kb_search_gaps_unique ON kb_search_gaps(normalized_query, source);
 
 -- SPRINT 3: Reputation, Analytics & Community System
 

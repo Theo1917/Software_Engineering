@@ -4,17 +4,18 @@ import { Search, Filter, Loader, AlertCircle } from 'lucide-react';
 
 export default function AdvancedSearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState({ tasks: [], posts: [], people: [], total: 0 });
+  const [results, setResults] = useState({ tasks: [], posts: [], people: [], knowledgeBase: [], total: 0 });
   const [facets, setFacets] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [savedSearches, setSavedSearches] = useState([]);
+  const [requestMessage, setRequestMessage] = useState('');
   
   // Filter state
   const [filters, setFilters] = useState({
-    types: ['tasks', 'posts', 'people'],
+    types: ['tasks', 'posts', 'people', 'knowledge-base'],
     difficulty: '',
     minBudget: '',
     maxBudget: '',
@@ -114,6 +115,19 @@ export default function AdvancedSearchPage() {
     setFilters(search.filters);
   };
 
+  const requestKnowledgeBaseArticle = async () => {
+    try {
+      await axios.post('/api/knowledge-base/gaps', {
+        queryText: query,
+        source: 'SEARCH_PAGE',
+        resultCount: results.knowledgeBase.length,
+      });
+      setRequestMessage(`Requested a KB article for "${query}".`);
+    } catch (err) {
+      setRequestMessage(err.response?.data?.message || 'Unable to request a KB article');
+    }
+  };
+
   const toggleFilter = (type) => {
     setFilters(prev => ({
       ...prev,
@@ -150,6 +164,7 @@ export default function AdvancedSearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search tasks, posts, people, skills..."
+              placeholder="Search tasks, discussions, people, knowledge base, and skills..."
               className="w-full pl-12 pr-4 py-3 bg-[#1a1f3a] text-white placeholder-gray-500 rounded-lg border border-cyan-500/30 focus:border-cyan-500 focus:outline-none transition"
             />
             {suggestions.length > 0 && (
@@ -187,7 +202,7 @@ export default function AdvancedSearchPage() {
               {/* Result Type Filters */}
               <div className="bg-[#1a1f3a] rounded-lg border border-cyan-500/20 p-4">
                 <h3 className="text-sm font-semibold text-cyan-400 mb-3">Result Types</h3>
-                {['tasks', 'posts', 'people'].map(type => (
+                {['tasks', 'posts', 'people', 'knowledge-base'].map(type => (
                   <label key={type} className="flex items-center gap-2 text-sm text-gray-400 mb-2 cursor-pointer hover:text-gray-300">
                     <input
                       type="checkbox"
@@ -195,7 +210,7 @@ export default function AdvancedSearchPage() {
                       onChange={() => toggleFilter(type)}
                       className="w-4 h-4 rounded"
                     />
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {type === 'knowledge-base' ? 'Knowledge Base' : type.charAt(0).toUpperCase() + type.slice(1)}
                   </label>
                 ))}
               </div>
@@ -350,6 +365,48 @@ export default function AdvancedSearchPage() {
               </div>
             )}
 
+            {results.knowledgeBase.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-cyan-400 mb-4">Knowledge Base ({results.knowledgeBase.length})</h2>
+                <div className="space-y-3">
+                  {results.knowledgeBase.map(article => (
+                    <div key={article.id} className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/50 transition">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{article.title}</h3>
+                          <p className="text-sm text-gray-400 mt-1 line-clamp-2">{article.summary || article.content}</p>
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {article.category_name && (
+                              <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded">
+                                {article.category_name}
+                              </span>
+                            )}
+                            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">
+                              {article.difficulty}
+                            </span>
+                            {article.read_time_minutes != null && (
+                              <span className="text-xs bg-slate-500/20 text-slate-300 px-2 py-1 rounded">
+                                {article.read_time_minutes} min read
+                              </span>
+                            )}
+                            {Array.isArray(article.tags) && article.tags.slice(0, 4).map(tag => (
+                              <span key={tag} className="text-xs bg-white/5 text-gray-300 px-2 py-1 rounded">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right text-xs text-gray-500">
+                          <div>{article.score ?? 0} helpful</div>
+                          <div>{article.view_count ?? 0} views</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {results.people.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">People ({results.people.length})</h2>
@@ -365,6 +422,17 @@ export default function AdvancedSearchPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {!loading && query && results.knowledgeBase.length === 0 && (
+              <div className="mt-8 rounded-lg border border-cyan-500/20 bg-[#1a1f3a] p-4">
+                <h2 className="text-lg font-semibold text-cyan-400">No Knowledge Base results</h2>
+                <p className="mt-1 text-sm text-gray-400">Turn this search into a missing-article request.</p>
+                <button onClick={requestKnowledgeBaseArticle} className="mt-3 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition text-sm font-medium">
+                  Request KB Article
+                </button>
+                {requestMessage && <p className="mt-2 text-sm text-gray-300">{requestMessage}</p>}
               </div>
             )}
           </div>

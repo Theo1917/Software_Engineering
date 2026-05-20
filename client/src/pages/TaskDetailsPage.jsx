@@ -14,6 +14,7 @@ export default function TaskDetailsPage() {
   const [error, setError] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState(null);
+  const [kbDrafting, setKBDrafting] = useState(false);
 
   useEffect(() => {
     fetchTaskDetails();
@@ -87,6 +88,18 @@ export default function TaskDetailsPage() {
       await fetchTaskDetails();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to raise dispute");
+    }
+  }
+
+  async function handleCreateKnowledgeBaseDraft() {
+    try {
+      setKBDrafting(true);
+      const response = await api.post(`/knowledge-base/synthesize/task/${taskId}`);
+      navigate("/knowledge-base", { state: { draftArticleId: response.data.article.id } });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create knowledge base draft");
+    } finally {
+      setKBDrafting(false);
     }
   }
 
@@ -179,6 +192,12 @@ export default function TaskDetailsPage() {
           {(isCreator || isSolver) && ["IN_PROGRESS", "UNDER_REVIEW", "COMPLETED"].includes(task.status) && (
             <button onClick={handleRaiseDispute} className="btn-secondary">
               Raise Dispute
+            </button>
+          )}
+
+          {task.status === "COMPLETED" && (isCreator || isSolver || user?.isAdmin) && (
+            <button onClick={handleCreateKnowledgeBaseDraft} className="btn-secondary" disabled={kbDrafting}>
+              {kbDrafting ? "Drafting KB Article..." : "Create KB Draft"}
             </button>
           )}
         </div>

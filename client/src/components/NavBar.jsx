@@ -56,6 +56,9 @@ export default function NavBar() {
           <NavLink to="/discussions" className={navClass}>
             Discussions
           </NavLink>
+          <NavLink to="/knowledge-base" className={navClass}>
+            Knowledge Base
+          </NavLink>
           {isAuthenticated && (
             <>
               <NavLink to="/notifications" className={navClass}>

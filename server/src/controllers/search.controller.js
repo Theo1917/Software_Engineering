@@ -2,11 +2,15 @@ import { pool } from "../config/db.js";
 
 // ADVANCED SEARCH & DISCOVERY
 
+function normalizeGapQuery(query) {
+  return String(query || "").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 255);
+}
+
 // Multi-modal search across all content
 export async function globalSearch(query, userId, filters = {}) {
   try {
     const {
-      types = ["tasks", "posts", "people"],
+      types = ["tasks", "posts", "people", "knowledge-base"],
       difficulty,
       minBudget,
       maxBudget,
@@ -21,6 +25,7 @@ export async function globalSearch(query, userId, filters = {}) {
       tasks: [],
       posts: [],
       people: [],
+      knowledgeBase: [],
       total: 0,
     };
 
@@ -126,7 +131,76 @@ export async function globalSearch(query, userId, filters = {}) {
       results.people = peopleResults.rows;
     }
 
-    results.total = results.tasks.length + results.posts.length + results.people.length;
+    // Search knowledge base
+    if (types.includes("knowledge-base") || types.includes("kb")) {
+      const kbQuery = `
+        SELECT a.id, a.title, a.slug, a.summary, a.difficulty, a.read_time_minutes,
+               a.view_count, a.featured, a.published_at, a.updated_at,
+               u.name AS author_name, c.name AS category_name, c.slug AS category_slug,
+               COALESCE(v.vote_total, 0) AS score,
+               COALESCE(t.tags, ARRAY[]::text[]) AS tags,
+               (CASE
+                  WHEN a.title ILIKE $1 THEN 100
+                  WHEN a.summary ILIKE $1 THEN 70
+                  WHEN c.name ILIKE $1 THEN 50
+                  WHEN EXISTS (SELECT 1 FROM unnest(COALESCE(t.tags, ARRAY[]::text[])) AS tag WHERE tag ILIKE $1) THEN 45
+                  WHEN a.content ILIKE $1 THEN 20
+                  ELSE 0
+                END) AS relevance_score
+        FROM kb_articles a
+        JOIN users u ON u.id = a.author_id
+        LEFT JOIN kb_categories c ON c.id = a.category_id
+        LEFT JOIN (
+          SELECT article_id, SUM(CASE WHEN vote_type = 'UP' THEN 1 WHEN vote_type = 'DOWN' THEN -1 ELSE 0 END) AS vote_total
+          FROM kb_article_votes
+          GROUP BY article_id
+        ) v ON v.article_id = a.id
+        LEFT JOIN (
+          SELECT article_id, ARRAY_AGG(tag ORDER BY tag) AS tags
+          FROM kb_article_tags
+          GROUP BY article_id
+        ) t ON t.article_id = a.id
+        WHERE a.status = 'PUBLISHED'
+          AND a.visibility = 'PUBLIC'
+          AND (
+            a.title ILIKE $1
+            OR a.summary ILIKE $1
+            OR a.content ILIKE $1
+            OR c.name ILIKE $1
+            OR EXISTS (
+              SELECT 1
+              FROM kb_article_tags tag
+              WHERE tag.article_id = a.id AND tag.tag ILIKE $1
+            )
+          )
+        ORDER BY relevance_score DESC, a.featured DESC, a.published_at DESC NULLS LAST, a.updated_at DESC
+        LIMIT $2
+      `;
+
+      const kbResults = await pool.query(kbQuery, [searchTerm, limit]);
+      results.knowledgeBase = kbResults.rows;
+
+      if (results.knowledgeBase.length === 0 && query.trim()) {
+        const normalizedQuery = normalizeGapQuery(query);
+
+        if (normalizedQuery) {
+          await pool.query(
+            `INSERT INTO kb_search_gaps (query_text, normalized_query, source, result_count, occurrence_count, status, last_seen_at)
+             VALUES ($1, $2, 'SEARCH', 0, 1, 'OPEN', NOW())
+             ON CONFLICT (normalized_query, source) DO UPDATE SET
+               query_text = EXCLUDED.query_text,
+               result_count = LEAST(kb_search_gaps.result_count, EXCLUDED.result_count),
+               occurrence_count = kb_search_gaps.occurrence_count + 1,
+               status = 'OPEN',
+               last_seen_at = NOW()`,
+            [query, normalizedQuery]
+          );
+        }
+      }
+    }
+
+    results.total =
+      results.tasks.length + results.posts.length + results.people.length + results.knowledgeBase.length;
 
     return results;
   } catch (error) {
@@ -145,6 +219,7 @@ export async function getFacets(query = "") {
       budgetRanges: [],
       skills: [],
       categories: [],
+      knowledgeBaseCategories: [],
       statuses: [],
       teams: [],
     };
@@ -203,6 +278,19 @@ export async function getFacets(query = "") {
       [searchTerm]
     );
     facets.categories = categoryResult.rows;
+
+    const kbCategoryResult = await pool.query(
+      `SELECT COALESCE(c.name, 'Uncategorized') AS category, COUNT(*) AS count
+       FROM kb_articles a
+       LEFT JOIN kb_categories c ON c.id = a.category_id
+       WHERE a.status = 'PUBLISHED'
+         AND a.visibility = 'PUBLIC'
+         AND (a.title ILIKE $1 OR a.summary ILIKE $1 OR a.content ILIKE $1)
+       GROUP BY COALESCE(c.name, 'Uncategorized')
+       ORDER BY count DESC`,
+      [searchTerm]
+    );
+    facets.knowledgeBaseCategories = kbCategoryResult.rows;
 
     // Status facet
     const statusResult = await pool.query(
@@ -304,6 +392,27 @@ export async function getSearchSuggestions(query, limit = 10) {
         FROM posts
         WHERE title ILIKE $1
         GROUP BY title
+        LIMIT $2
+      )
+      UNION ALL
+      (
+        SELECT DISTINCT title as suggestion, 'knowledge-base' as type, COUNT(*) as frequency
+        FROM kb_articles
+        WHERE status = 'PUBLISHED'
+          AND visibility = 'PUBLIC'
+          AND title ILIKE $1
+        GROUP BY title
+        LIMIT $2
+      )
+      UNION ALL
+      (
+        SELECT DISTINCT COALESCE(c.name, 'Uncategorized') as suggestion, 'kb-category' as type, COUNT(*) as frequency
+        FROM kb_articles a
+        LEFT JOIN kb_categories c ON c.id = a.category_id
+        WHERE a.status = 'PUBLISHED'
+          AND a.visibility = 'PUBLIC'
+          AND COALESCE(c.name, 'Uncategorized') ILIKE $1
+        GROUP BY COALESCE(c.name, 'Uncategorized')
         LIMIT $2
       )
       UNION ALL
