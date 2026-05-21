@@ -410,3 +410,53 @@ export async function votePost(req, res, next) {
     return next(error);
   }
 }
+
+export async function summarizePost(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const postResult = await pool.query(
+      `SELECT p.title, p.content, p.category, u.name AS author_name
+       FROM posts p
+       JOIN users u ON u.id = p.author_id
+       WHERE p.id = $1`,
+      [id]
+    );
+
+    if (postResult.rowCount === 0) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const commentsResult = await pool.query(
+      `SELECT c.content, u.name AS author_name
+       FROM comments c
+       JOIN users u ON u.id = c.author_id
+       WHERE c.post_id = $1
+       ORDER BY c.created_at ASC
+       LIMIT 20`,
+      [id]
+    );
+
+    const post = postResult.rows[0];
+    const discussionText = [
+      `Title: ${post.title}`,
+      `Category: ${post.category}`,
+      `Author: ${post.author_name}`,
+      `Content: ${post.content}`,
+      commentsResult.rows.length > 0
+        ? `Comments:\n${commentsResult.rows
+            .map((comment) => `- ${comment.author_name}: ${comment.content}`)
+            .join("\n")}`
+        : "Comments: None",
+    ].join("\n\n");
+
+    const summaryResult = await summarizeIssue(discussionText);
+
+    return res.json({
+      summary: summaryResult.summary,
+      actions: summaryResult.actions,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}

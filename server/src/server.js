@@ -37,14 +37,36 @@ async function archiveClosedTasks() {
 async function ensureSchema() {
   const schemaPath = resolve(__dirname, "../db/schema.sql");
   const rawSql = await readFile(schemaPath, "utf8");
+  const vectorResult = await pool.query(
+    "SELECT EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') AS available"
+  );
+  const vectorAvailable = Boolean(vectorResult.rows[0]?.available);
+  const schemaSql = vectorAvailable
+    ? rawSql
+    : rawSql.replace(
+        /-- pgvector: embeddings storage for engineering knowledge[\s\S]*?CREATE INDEX IF NOT EXISTS idx_engineering_knowledge_framework ON engineering_knowledge\(framework\);\s*/m,
+        ""
+      );
 
   // Run statements one-by-one so we can ignore duplicate enum type creation in existing DBs.
-  const statements = rawSql
+  const statements = schemaSql
     .split(/;\s*(?:\r?\n|$)/)
     .map((statement) => statement.trim())
     .filter(Boolean);
 
   for (const statement of statements) {
+    if (!vectorAvailable) {
+      const isVectorStatement =
+        /^CREATE\s+EXTENSION\s+IF\s+NOT\s+EXISTS\s+vector/i.test(statement) ||
+        /engineering_knowledge/i.test(statement) ||
+        /vector_cosine_ops/i.test(statement) ||
+        /\bvector\s*\(/i.test(statement);
+
+      if (isVectorStatement) {
+        continue;
+      }
+    }
+
     try {
       await pool.query(statement);
     } catch (error) {

@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
+import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -27,7 +28,7 @@ const DiscussionsPage = lazy(() => import("./pages/DiscussionsPage"));
 
 export default function App() {
   return (
-    <Layout>
+    <ThemeProvider><Layout>
       <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading…</div>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -109,6 +110,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
-    </Layout>
+    </Layout></ThemeProvider>
   );
 }

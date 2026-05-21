@@ -1,14 +1,16 @@
 import { Link, NavLink } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { navItems } from "./navItems";
 import { navClass } from "./navClass";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="bg-gradient-to-r from-obsidian via-surface to-obsidian text-text shadow-card border-b border-white/10">
@@ -57,6 +59,15 @@ export default function Header() {
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+          {/* Dark mode toggle */}
+          <button
+            type="button"
+            className="lg:hidden text-text hover:text-neon ml-2"
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+          </button>
       </div>
       {/* Mobile drawer */}
       {menuOpen && (

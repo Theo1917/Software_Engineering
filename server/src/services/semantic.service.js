@@ -1,19 +1,36 @@
 import { pool } from "../config/db.js";
 import { embedText } from "../lib/embeddings.service.js";
 
+function isVectorSchemaUnavailable(error) {
+  return (
+    error?.code === "42P01" ||
+    error?.code === "42704" ||
+    /engineering_knowledge/i.test(error?.message || "") ||
+    /vector/i.test(error?.message || "")
+  );
+}
+
 export async function indexKnowledgeItem({ source_type, source_id = null, title = null, content, tags = [], deployment_platform = null, framework = null, metadata = {} }) {
   if (!content) throw new Error("content is required");
 
   const embedding = process.env.OPENAI_API_KEY ? await embedText(content) : null;
 
-  const result = await pool.query(
-    `INSERT INTO engineering_knowledge (source_type, source_id, title, content, embedding, tags, deployment_platform, framework, metadata)
-     VALUES ($1, $2, $3, $4, ${embedding ? `($5::real[])` : "NULL"}, $6, $7, $8, $9)
-     RETURNING *`,
-    embedding ? [source_type, source_id, title, content, embedding, tags, deployment_platform, framework, JSON.stringify(metadata)] : [source_type, source_id, title, content, tags, deployment_platform, framework, JSON.stringify(metadata)]
-  );
+  try {
+    const result = await pool.query(
+      `INSERT INTO engineering_knowledge (source_type, source_id, title, content, embedding, tags, deployment_platform, framework, metadata)
+       VALUES ($1, $2, $3, $4, ${embedding ? `($5::real[])` : "NULL"}, $6, $7, $8, $9)
+       RETURNING *`,
+      embedding ? [source_type, source_id, title, content, embedding, tags, deployment_platform, framework, JSON.stringify(metadata)] : [source_type, source_id, title, content, tags, deployment_platform, framework, JSON.stringify(metadata)]
+    );
 
-  return result.rows[0];
+    return result.rows[0];
+  } catch (error) {
+    if (isVectorSchemaUnavailable(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function vectorSearch({ queryText, limit = 6, platform = null, framework = null }) {
@@ -48,8 +65,16 @@ export async function vectorSearch({ queryText, limit = 6, platform = null, fram
     ORDER BY embedding <#> $1::real[] ASC
     LIMIT $2`;
 
-  const result = await pool.query(sql, params);
-  return result.rows.map((r) => ({ ...r, similarity: Number(r.similarity) }));
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows.map((r) => ({ ...r, similarity: Number(r.similarity) }));
+  } catch (error) {
+    if (isVectorSchemaUnavailable(error)) {
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 export default { indexKnowledgeItem, vectorSearch };
