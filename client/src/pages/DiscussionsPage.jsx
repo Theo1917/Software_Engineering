@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
-import ReactMarkdown from "react-markdown";
 
 const initialPost = {
   title: "",

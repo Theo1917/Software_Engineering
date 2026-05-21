@@ -149,7 +149,9 @@ export async function updateUserAnalytics(userId) {
       ]
     );
 
-    const skills = Array.isArray(userQuery.rows[0].skills) ? userQuery.rows[0].skills : [];
+    // Fetch user skills from users table (avoid using undefined `userQuery`)
+    const userRes = await db.query(`SELECT skills FROM users WHERE id = $1`, [userId]);
+    const skills = Array.isArray(userRes.rows[0]?.skills) ? userRes.rows[0].skills : [];
     for (const skill of skills) {
       await updateSkillPerformance(userId, skill);
     }

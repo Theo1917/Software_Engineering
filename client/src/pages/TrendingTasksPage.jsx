@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { TrendingUp, Flame, Zap, Star, Users, Loader, Clock } from 'lucide-react';
 import Card from "../components/Card";
@@ -6,6 +7,7 @@ import Button from "../components/Button";
 import Badge from "../components/Badge";
 
 export default function TrendingTasksPage() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -201,7 +203,13 @@ export default function TrendingTasksPage() {
                   </div>
 
                   {/* CTA Button */}
-                      <Button className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 rounded-lg hover:from-cyan-500/40 hover:to-purple-500/40 transition font-medium">View Task</Button>
+                      <Button
+                        type="button"
+                        onClick={() => navigate(`/task/${task.id}`)}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 rounded-lg hover:from-cyan-500/40 hover:to-purple-500/40 transition font-medium"
+                      >
+                        View Task
+                      </Button>
                 </div>
               </div>
             );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ChatComponent from "../components/ChatComponent";
 import { api } from "../lib/api";
@@ -43,6 +43,26 @@ export default function TaskDetailsPage() {
       await fetchTaskDetails();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to accept proposal");
+    }
+  }
+
+  async function handleTakeUpTask() {
+    const message = window.prompt("Proposal message");
+    const bid = window.prompt("Bid amount");
+
+    if (!message || !bid) {
+      return;
+    }
+
+    try {
+      await api.post(`/tasks/${taskId}/proposals`, {
+        message,
+        bidAmount: Number(bid),
+      });
+      setError("");
+      await fetchTaskDetails();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to submit proposal");
     }
   }
 
@@ -128,9 +148,71 @@ export default function TaskDetailsPage() {
 
   const isCreator = user?.id === task.creator_id;
   const isSolver = user?.id === task.assigned_solver_id;
+  const isAuthenticatedUser = Boolean(user?.id);
   const isInNegotiation = task.status === "IN_NEGOTIATION";
   const isInProgress = task.status === "IN_PROGRESS";
   const isUnderReview = task.status === "UNDER_REVIEW";
+
+  const taskActions = [];
+
+  if (task.status === "OPEN" && isAuthenticatedUser && !isCreator) {
+    taskActions.push(
+      <Button key="take-up-task" onClick={handleTakeUpTask}>
+        Take Up Task / Submit Proposal
+      </Button>
+    );
+  }
+
+  if (isCreator && isInNegotiation && selectedProposal) {
+    taskActions.push(
+      <Button key="confirm-negotiation" onClick={() => handleConfirmNegotiation(selectedProposal)}>
+        Confirm Negotiation
+      </Button>
+    );
+  }
+
+  if (isSolver && isInProgress) {
+    taskActions.push(
+      <Button key="submit-deliverables" onClick={handleSubmitDeliverables}>
+        Submit Deliverables
+      </Button>
+    );
+  }
+
+  if (isCreator && isUnderReview) {
+    taskActions.push(
+      <Button key="approve-submission" onClick={handleApproveSubmission}>
+        Approve Submission
+      </Button>,
+      <Button key="reject-submission" variant="secondary" onClick={handleRejectSubmission}>
+        Reject Submission
+      </Button>
+    );
+  }
+
+  if (task.status === "COMPLETED" && isSolver) {
+    taskActions.push(
+      <Button key="rate-task" onClick={handleRateTask}>
+        Rate & Provide Feedback
+      </Button>
+    );
+  }
+
+  if ((isCreator || isSolver) && ["IN_PROGRESS", "UNDER_REVIEW", "COMPLETED"].includes(task.status)) {
+    taskActions.push(
+      <Button key="raise-dispute" variant="secondary" onClick={handleRaiseDispute}>
+        Raise Dispute
+      </Button>
+    );
+  }
+
+  if (task.status === "COMPLETED" && (isCreator || isSolver || user?.isAdmin)) {
+    taskActions.push(
+      <Button key="create-kb-draft" variant="secondary" onClick={handleCreateKnowledgeBaseDraft} disabled={kbDrafting}>
+        {kbDrafting ? "Drafting KB Article..." : "Create KB Draft"}
+      </Button>
+    );
+  }
 
   return (
     <section className="space-y-6 fade-in">
@@ -159,38 +241,27 @@ export default function TaskDetailsPage() {
         </div>
       </Card>
 
-      <Card>
-        <div className="flex flex-wrap gap-3">
-          {isCreator && isInNegotiation && selectedProposal && (
-            <Button onClick={() => handleConfirmNegotiation(selectedProposal)}>Confirm Negotiation</Button>
-          )}
-
-          {isSolver && isInProgress && (
-            <Button onClick={handleSubmitDeliverables}>Submit Deliverables</Button>
-          )}
-
-          {isCreator && isUnderReview && (
-            <>
-              <Button onClick={handleApproveSubmission}>Approve Submission</Button>
-              <Button variant="secondary" onClick={handleRejectSubmission}>Reject Submission</Button>
-            </>
-          )}
-
-          {task.status === "COMPLETED" && isSolver && (
-            <Button onClick={handleRateTask}>Rate & Provide Feedback</Button>
-          )}
-
-          {(isCreator || isSolver) && ["IN_PROGRESS", "UNDER_REVIEW", "COMPLETED"].includes(task.status) && (
-            <Button variant="secondary" onClick={handleRaiseDispute}>Raise Dispute</Button>
-          )}
-
-          {task.status === "COMPLETED" && (isCreator || isSolver || user?.isAdmin) && (
-            <Button variant="secondary" onClick={handleCreateKnowledgeBaseDraft} disabled={kbDrafting}>
-              {kbDrafting ? "Drafting KB Article..." : "Create KB Draft"}
-            </Button>
-          )}
-        </div>
-      </Card>
+      {taskActions.length > 0 ? (
+        <Card>
+          <div className="flex flex-wrap gap-3">{taskActions}</div>
+        </Card>
+      ) : task.status === "OPEN" && !isAuthenticatedUser ? (
+        <Card>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-text">Want to take up this task?</p>
+              <p className="text-sm text-text/70">Log in to submit a proposal and start negotiation with the creator.</p>
+            </div>
+            <Link to="/login" className="btn-primary inline-flex justify-center">
+              Login to Propose
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <p className="text-sm text-text/70">No task actions are available for this task right now.</p>
+        </Card>
+      )}
 
       {(isCreator || isSolver) && isInProgress && (
         <div className="card">
