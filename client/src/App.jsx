@@ -1,31 +1,35 @@
+import React, { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
-import DiscussionsPage from "./pages/DiscussionsPage";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import MyTasksPage from "./pages/MyTasksPage";
-import ProfilePage from "./pages/ProfilePage";
-import RegisterPage from "./pages/RegisterPage";
-import TasksPage from "./pages/TasksPage";
-import TechNewsPage from "./pages/TechNewsPage";
-import TaskDetailsPage from "./pages/TaskDetailsPage";
-import SubmissionPage from "./pages/SubmissionPage";
-import RatingsPage from "./pages/RatingsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import AdminPanelPage from "./pages/AdminPanelPage";
-import TeamsPage from "./pages/TeamsPage";
-import AdvancedSearchPage from "./pages/AdvancedSearchPage";
-import TrendingTasksPage from "./pages/TrendingTasksPage";
-import SmartRecommendationsPage from "./pages/SmartRecommendationsPage";
-import KnowledgeBasePage from "./pages/KnowledgeBasePage";
-import DeploymentAssistantPage from "./pages/DeploymentAssistantPage";
+
+const HomePage = lazy(() => import("./pages/HomePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const TaskDetailsPage = lazy(() => import("./pages/TaskDetailsPage"));
+const MyTasksPage = lazy(() => import("./pages/MyTasksPage"));
+const SubmissionPage = lazy(() => import("./pages/SubmissionPage"));
+const RatingsPage = lazy(() => import("./pages/RatingsPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const AdminPanelPage = lazy(() => import("./pages/AdminPanelPage"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage"));
+const AdvancedSearchPage = lazy(() => import("./pages/AdvancedSearchPage"));
+const TrendingTasksPage = lazy(() => import("./pages/TrendingTasksPage"));
+const SmartRecommendationsPage = lazy(() => import("./pages/SmartRecommendationsPage"));
+const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
+const DeploymentAssistantPage = lazy(() => import("./pages/DeploymentAssistantPage"));
+const TechNewsPage = lazy(() => import("./pages/TechNewsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const DiscussionsPage = lazy(() => import("./pages/DiscussionsPage"));
+
 
 export default function App() {
   return (
     <Layout>
-      <Routes>
+      <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading…</div>}>
+        <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -104,6 +108,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
     </Layout>
   );
 }

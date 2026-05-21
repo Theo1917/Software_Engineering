@@ -1,7 +1,8 @@
 import { pool } from "../config/db.js";
-import { indexKnowledgeItem } from "../services/semantic.service.js";
+import { indexKnowledgeItem, vectorSearch } from "../services/semantic.service.js";
 import { createNotification } from "./notifications.controller.js";
 import { updateUserAnalytics } from "./analytics.controller.js";
+import { summarizeIssue } from "../lib/summarize.service.js";
 
 export async function listPosts(req, res, next) {
   try {
@@ -183,7 +184,84 @@ export async function createPost(req, res, next) {
       console.error("Indexing post failed:", err?.message || err);
     }
 
-    return res.status(201).json({ post: result.rows[0] });
+    // AI features: duplicate detection, smart tagging, severity, and summary/actions
+    const composed = `${title}\n\n${content}`;
+
+    // Duplicate detection (try vector search, fallback to lexical overlap)
+    let duplicateSuggestions = [];
+    try {
+      const vectorResults = await vectorSearch({ queryText: composed, limit: 6 });
+      duplicateSuggestions = vectorResults.map((r) => ({ id: r.id, title: r.title, snippet: (r.content || "").slice(0, 240), similarity: r.similarity }));
+    } catch (err) {
+      try {
+        const recent = await pool.query("SELECT id, title, content, created_at FROM posts ORDER BY created_at DESC LIMIT 80");
+        duplicateSuggestions = recent.rows
+          .map((p) => ({ id: p.id, title: p.title, snippet: (p.content || "").slice(0, 240), similarity: scoreOverlap(composed, `${p.title} ${p.content}`) }))
+          .filter((d) => d.similarity > 0)
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 6);
+      } catch (e) {
+        duplicateSuggestions = [];
+      }
+    }
+
+    // Smart tagging & platform/framework detection (heuristic)
+    const lower = composed.toLowerCase();
+    const suggestedTags = new Set([...(tags || [])]);
+    const suggestedPlatforms = [];
+    const suggestedFrameworks = [];
+    const platformChecks = [
+      [/vercel|vercel\.json/i, 'Vercel'],
+      [/render|render\.ya?ml/i, 'Render'],
+      [/railway/i, 'Railway'],
+      [/dockerfile|docker-compose|\bdocker\b/i, 'Docker'],
+    ];
+    platformChecks.forEach(([rx, name]) => { if (rx.test(lower)) suggestedPlatforms.push(name); });
+    const fwChecks = [
+      [/\breact\b|\bvite\b|\bnext\b/i, 'React/Vite/Next'],
+      [/\bexpress\b|\bfastify\b/i, 'Express'],
+      [/\bfastapi\b|\buvicorn\b/i, 'FastAPI'],
+      [/postgres|postgresql|\bpg\b/i, 'PostgreSQL'],
+      [/mongodb|mongoose/i, 'MongoDB'],
+    ];
+    fwChecks.forEach(([rx, name]) => { if (rx.test(lower)) suggestedFrameworks.push(name); });
+    suggestedPlatforms.forEach((p) => suggestedTags.add(p));
+    suggestedFrameworks.forEach((f) => suggestedTags.add(f));
+
+    // Severity heuristics
+    let suggestedSeverity = 'LOW';
+    if (/(production|down|crash|failed|fatal|panic|urgent)/i.test(lower)) suggestedSeverity = 'CRITICAL';
+    else if (/(error|timeout|unreachable|failed to|cannot)/i.test(lower)) suggestedSeverity = 'HIGH';
+    else if (/(warning|degraded|slow|partial)/i.test(lower)) suggestedSeverity = 'MEDIUM';
+
+    // Summarization / action items
+    let aiSummary = null;
+    let aiActions = [];
+    try {
+      const s = await summarizeIssue(composed + "\n\n(If available, recent comments will be considered in a later summary.)");
+      aiSummary = s.summary;
+      aiActions = s.actions || [];
+    } catch (err) {
+      aiSummary = (String(content).replace(/\s+/g, ' ').trim().slice(0, 280)) || '';
+      aiActions = [
+        'Collect logs and platform configuration.',
+        'Verify environment variables and secrets in production.',
+        'Reproduce locally using the production build.'
+      ];
+    }
+
+    return res.status(201).json({
+      post: result.rows[0],
+      ai: {
+        duplicates: duplicateSuggestions,
+        suggested_tags: Array.from(suggestedTags),
+        suggested_platforms: suggestedPlatforms,
+        suggested_frameworks: suggestedFrameworks,
+        suggested_severity: suggestedSeverity,
+        summary: aiSummary,
+        actions: aiActions,
+      },
+    });
   } catch (error) {
     return next(error);
   }

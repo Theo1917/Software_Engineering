@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { apiCall } from "../lib/api";
-import NavBar from "../components/NavBar";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import { useToast } from "../components/ToastProvider";
 import Badge from "../components/Badge";
 
 export default function TeamsPage() {
@@ -11,8 +11,7 @@ export default function TeamsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
+    const [form, setForm] = useState({
     name: "",
     description: "",
     isPublic: false,
@@ -23,6 +22,7 @@ export default function TeamsPage() {
   });
   const [userSearch, setUserSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const toast = useToast();
 
   const fetchTeams = async () => {
     try {
@@ -154,8 +154,7 @@ export default function TeamsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <NavBar />
+          <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Teams Sidebar */}
