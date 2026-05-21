@@ -60,13 +60,14 @@ export default function TeamAnalyticsPage({ teamId }) {
       earnings: m.total_earnings || 0,
     }));
 
+  const neutralFill = '#E6EDF3';
   const taskStatusData = [
-    { name: 'Open', value: teamStats.open_tasks || 0, fill: '#00ff66' },
-    { name: 'In Progress', value: teamStats.in_progress_tasks || 0, fill: '#00ccff' },
-    { name: 'Completed', value: teamStats.completed_tasks || 0, fill: '#6600ff' },
+    { name: 'Open', value: teamStats.open_tasks || 0, fill: neutralFill },
+    { name: 'In Progress', value: teamStats.in_progress_tasks || 0, fill: neutralFill },
+    { name: 'Completed', value: teamStats.completed_tasks || 0, fill: neutralFill },
   ];
 
-  const COLORS = ['#00ff66', '#00ccff', '#6600ff', '#ff3366'];
+  const COLORS = [neutralFill, neutralFill, neutralFill, neutralFill];
 
   return (
     <div className="space-y-6">
@@ -109,8 +110,8 @@ export default function TeamAnalyticsPage({ teamId }) {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tasks Over Time */}
-        <div className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-4">Task Activity</h3>
+        <div className="bg-[#1a1f3a] border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text mb-4">Task Activity</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1a1f3a" />
@@ -119,23 +120,23 @@ export default function TeamAnalyticsPage({ teamId }) {
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#0f172a',
-                  border: '1px solid #00ff66',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: '8px',
                 }}
-                labelStyle={{ color: '#00ff66' }}
+                labelStyle={{ color: 'var(--color-ink)' }}
               />
               <Legend />
               <Line
                 type="monotone"
                 dataKey="tasksCreated"
-                stroke="#00ff66"
+                stroke={neutralFill}
                 name="Created"
                 strokeWidth={2}
               />
               <Line
                 type="monotone"
                 dataKey="tasksCompleted"
-                stroke="#00ccff"
+                stroke={neutralFill}
                 name="Completed"
                 strokeWidth={2}
               />
@@ -144,8 +145,8 @@ export default function TeamAnalyticsPage({ teamId }) {
         </div>
 
         {/* Task Status Distribution */}
-        <div className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-4">Task Distribution</h3>
+        <div className="bg-[#1a1f3a] border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text mb-4">Task Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -167,7 +168,7 @@ export default function TeamAnalyticsPage({ teamId }) {
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#0f172a',
-                  border: '1px solid #00ff66',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: '8px',
                 }}
               />
@@ -176,8 +177,8 @@ export default function TeamAnalyticsPage({ teamId }) {
         </div>
 
         {/* Efficiency Score */}
-        <div className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-4">Team Efficiency Trend</h3>
+        <div className="bg-[#1a1f3a] border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text mb-4">Team Efficiency Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1a1f3a" />
@@ -186,18 +187,18 @@ export default function TeamAnalyticsPage({ teamId }) {
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#0f172a',
-                  border: '1px solid #00ff66',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: '8px',
                 }}
               />
-              <Bar dataKey="efficiency" fill="#ff6600" name="Efficiency Score" />
+              <Bar dataKey="efficiency" fill={neutralFill} name="Efficiency Score" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Active Members */}
-        <div className="bg-[#1a1f3a] border border-cyan-500/20 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-4">Active Members</h3>
+        <div className="bg-[#1a1f3a] border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text mb-4">Active Members</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1a1f3a" />
@@ -206,14 +207,14 @@ export default function TeamAnalyticsPage({ teamId }) {
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#0f172a',
-                  border: '1px solid #00ff66',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: '8px',
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="activeMembers"
-                stroke="#ff33ff"
+                stroke={neutralFill}
                 name="Active Members"
                 strokeWidth={2}
               />

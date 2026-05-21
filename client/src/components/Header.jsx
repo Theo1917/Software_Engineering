@@ -2,7 +2,9 @@ import { Link, NavLink } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../lib/api";
+import { identifySocketUser, initSocket } from "../lib/socket";
 import { Menu, X, Sun, Moon } from "lucide-react";
 import { navItems } from "./navItems";
 import { navClass } from "./navClass";
@@ -11,6 +13,38 @@ export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [privateUnread, setPrivateUnread] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUnread() {
+      if (!isAuthenticated) return setPrivateUnread(0);
+      try {
+        const res = await api.get('/messages/private/unread');
+        const counts = res.data.counts || {};
+        const total = Object.values(counts).reduce((s, v) => s + Number(v || 0), 0);
+        if (mounted) setPrivateUnread(total);
+      } catch (e) {
+        console.error('Failed to fetch private unread counts', e);
+      }
+    }
+    fetchUnread();
+    const id = setInterval(fetchUnread, 30000);
+    const socket = initSocket();
+    if (user?.id) {
+      identifySocketUser(user.id);
+      const handleUnreadUpdate = ({ totalUnread }) => {
+        setPrivateUnread(Number(totalUnread || 0));
+      };
+      socket.on("private-unread-updated", handleUnreadUpdate);
+      return () => {
+        mounted = false;
+        clearInterval(id);
+        socket.off("private-unread-updated", handleUnreadUpdate);
+      };
+    }
+    return () => { mounted = false; clearInterval(id); };
+  }, [isAuthenticated]);
 
   return (
     <header className="bg-gradient-to-r from-obsidian via-surface to-obsidian text-text shadow-card border-b border-white/10">
@@ -25,8 +59,15 @@ export default function Header() {
               {item.label}
             </NavLink>
           ))}
+          {isAuthenticated && (
+            <NavLink to="/my-tasks" className={navClass}>
+              My Tasks
+              {privateUnread > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-white/6 px-2 py-0.5 text-xs font-semibold">{privateUnread}</span>
+              )}
+            </NavLink>
+          )}
           {isAuthenticated && <NavLink to="/recommendations" className={navClass}>For You</NavLink>}
-          {isAuthenticated && <NavLink to="/my-tasks" className={navClass}>My Tasks</NavLink>}
           {isAuthenticated && <NavLink to="/notifications" className={navClass}>Notifications</NavLink>}
           {isAuthenticated && <NavLink to="/profile" className={navClass}>Profile</NavLink>}
           {isAuthenticated && user?.isAdmin && <NavLink to="/admin" className={navClass}>Admin Panel</NavLink>}

@@ -93,6 +93,8 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_solver_id INTEGER REFERENCES users(id) ON DELETE SET NULL");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE");
+  await pool.query("ALTER TABLE messages ADD COLUMN IF NOT EXISTS recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE");
+  await pool.query("CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id)");
   await pool.query("ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'PROPOSAL_RECEIVED'");
   await pool.query("ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'MESSAGE_RECEIVED'");
 
@@ -116,6 +118,87 @@ io.on("connection", (socket) => {
       message: `User joined the chat`,
       activeUsers: taskConnections[taskId].size,
     });
+  });
+
+  // Join private 1:1 chat for a task between two users
+  socket.on("join-private-chat", ({ taskId, userId, otherUserId }) => {
+    try {
+      const a = Number(userId);
+      const b = Number(otherUserId);
+      const [minId, maxId] = a < b ? [a, b] : [b, a];
+      const roomName = `task-${taskId}-private-${minId}-${maxId}`;
+      socket.join(roomName);
+    } catch (e) {
+      console.error('join-private-chat error', e);
+    }
+  });
+
+  socket.on("identify", (userId) => {
+    try {
+      const uid = Number(userId);
+      if (!Number.isNaN(uid)) {
+        socket.join(`user-${uid}`);
+      }
+    } catch (e) {
+      console.error("identify error", e);
+    }
+  });
+
+  // Send private message in task context (emitted to private room)
+  socket.on("send-private-message", (data) => {
+    try {
+      const { taskId, fromUserId, toUserId, message, fileUrl } = data || {};
+      const a = Number(fromUserId);
+      const b = Number(toUserId);
+      const [minId, maxId] = a < b ? [a, b] : [b, a];
+      const roomName = `task-${taskId}-private-${minId}-${maxId}`;
+      io.to(roomName).emit("receive-private-message", {
+        fromUserId,
+        toUserId,
+        message,
+        fileUrl: fileUrl || null,
+        timestamp: new Date(),
+      });
+
+      (async () => {
+        try {
+          const recipientId = Number(toUserId);
+          const totalRes = await pool.query(
+            `SELECT COUNT(*) AS cnt
+             FROM messages m
+             WHERE m.recipient_id = $1
+               AND NOT EXISTS (
+                 SELECT 1 FROM message_reads mr
+                 WHERE mr.message_id = m.id
+                   AND mr.user_id = $1
+               )`,
+            [recipientId]
+          );
+          const taskRes = await pool.query(
+            `SELECT COUNT(*) AS cnt
+             FROM messages m
+             WHERE m.recipient_id = $1
+               AND m.task_id = $2
+               AND NOT EXISTS (
+                 SELECT 1 FROM message_reads mr
+                 WHERE mr.message_id = m.id
+                   AND mr.user_id = $1
+               )`,
+            [recipientId, Number(taskId)]
+          );
+
+          io.to(`user-${recipientId}`).emit("private-unread-updated", {
+            taskId: Number(taskId),
+            unreadForTask: Number(taskRes.rows[0]?.cnt || 0),
+            totalUnread: Number(totalRes.rows[0]?.cnt || 0),
+          });
+        } catch (error) {
+          console.error("private unread update after send failed", error);
+        }
+      })();
+    } catch (e) {
+      console.error('send-private-message error', e);
+    }
   });
 
   // Send message
@@ -152,6 +235,89 @@ io.on("connection", (socket) => {
     const { taskId, messageId } = data;
     const roomName = `task-${taskId}`;
     socket.to(roomName).emit("read-receipt", { messageId });
+  });
+
+  // Private message read receipt
+  socket.on("private-message-read", (data) => {
+    try {
+      const { taskId, messageId, fromUserId, toUserId } = data;
+      const a = Number(fromUserId);
+      const b = Number(toUserId);
+      const [minId, maxId] = a < b ? [a, b] : [b, a];
+      const roomName = `task-${taskId}-private-${minId}-${maxId}`;
+      socket.to(roomName).emit("private-read-receipt", { messageId, readerId: toUserId });
+
+      (async () => {
+        try {
+          const readerId = Number(toUserId);
+          const otherId = Number(fromUserId);
+
+          const [readerTotal, readerTask, otherTotal, otherTask] = await Promise.all([
+            pool.query(
+              `SELECT COUNT(*) AS cnt
+               FROM messages m
+               WHERE m.recipient_id = $1
+                 AND NOT EXISTS (
+                   SELECT 1 FROM message_reads mr
+                   WHERE mr.message_id = m.id
+                     AND mr.user_id = $1
+                 )`,
+              [readerId]
+            ),
+            pool.query(
+              `SELECT COUNT(*) AS cnt
+               FROM messages m
+               WHERE m.recipient_id = $1
+                 AND m.task_id = $2
+                 AND NOT EXISTS (
+                   SELECT 1 FROM message_reads mr
+                   WHERE mr.message_id = m.id
+                     AND mr.user_id = $1
+                 )`,
+              [readerId, Number(taskId)]
+            ),
+            pool.query(
+              `SELECT COUNT(*) AS cnt
+               FROM messages m
+               WHERE m.recipient_id = $1
+                 AND NOT EXISTS (
+                   SELECT 1 FROM message_reads mr
+                   WHERE mr.message_id = m.id
+                     AND mr.user_id = $1
+                 )`,
+              [otherId]
+            ),
+            pool.query(
+              `SELECT COUNT(*) AS cnt
+               FROM messages m
+               WHERE m.recipient_id = $1
+                 AND m.task_id = $2
+                 AND NOT EXISTS (
+                   SELECT 1 FROM message_reads mr
+                   WHERE mr.message_id = m.id
+                     AND mr.user_id = $1
+                 )`,
+              [otherId, Number(taskId)]
+            ),
+          ]);
+
+          io.to(`user-${readerId}`).emit("private-unread-updated", {
+            taskId: Number(taskId),
+            unreadForTask: Number(readerTask.rows[0]?.cnt || 0),
+            totalUnread: Number(readerTotal.rows[0]?.cnt || 0),
+          });
+          io.to(`user-${otherId}`).emit("private-unread-updated", {
+            taskId: Number(taskId),
+            unreadForTask: Number(otherTask.rows[0]?.cnt || 0),
+            totalUnread: Number(otherTotal.rows[0]?.cnt || 0),
+          });
+        } catch (error) {
+          console.error("private unread update after read failed", error);
+        }
+      })();
+    } catch (e) {
+      console.error('private-message-read error', e);
+    }
   });
 
   // Disconnect

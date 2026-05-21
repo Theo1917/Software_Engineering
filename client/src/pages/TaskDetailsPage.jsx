@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ChatComponent from "../components/ChatComponent";
+import PrivateChat from "../components/PrivateChat";
 import { api } from "../lib/api";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -16,6 +17,7 @@ export default function TaskDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showChat, setShowChat] = useState(false);
+  const [showPrivateChat, setShowPrivateChat] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [kbDrafting, setKBDrafting] = useState(false);
 
@@ -222,6 +224,22 @@ export default function TaskDetailsPage() {
           <p className="text-sm font-medium">Description</p>
           <p className="mt-2 text-sm text-text/80">{task.description}</p>
         </div>
+          {/* Private 1:1 chat with creator */}
+          {(!isCreator && canOpenChat) && (
+            <div className="mt-3">
+              {showPrivateChat ? (
+                <div className="rounded-[1.4rem] border border-white/10 bg-obsidian/95 shadow-2xl backdrop-blur-md">
+                  <div className="p-3">
+                    <PrivateChat taskId={task.id} otherUserId={task.creator_id} userId={user?.id} userName={user?.name} onClose={() => setShowPrivateChat(false)} />
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowPrivateChat(true)} className="ml-auto mt-2 block rounded-full border border-white/10 bg-white px-4 py-3 text-sm font-semibold text-obsidian shadow-lg" title="Start a private chat with the task owner" aria-label="Message task owner">
+                  Message Task Owner
+                </button>
+              )}
+            </div>
+          )}
       </Card>
 
       {taskActions.length > 0 ? (

@@ -48,7 +48,7 @@ function NavBar() {
         className={`fixed left-0 top-0 z-30 flex h-screen w-72 flex-col border-r border-white/10 bg-obsidian/90 px-4 py-5 backdrop-blur-xl transform transition-transform duration-300 ease-in-out ${navOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         <div className="flex items-center gap-3 pb-5">
-          <div className="h-10 w-1 rounded-full bg-gradient-to-b from-neon to-danger" />
+          <div className="h-10 w-1 rounded-full bg-white/10" />
           <Link
             to="/"
             className="leading-none rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/80 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
@@ -69,7 +69,10 @@ function NavBar() {
               key={item.to}
               to={item.to}
               className={navClass}
-              onClick={() => setNavOpen(false)}
+              onClick={() => {
+                try { localStorage.setItem('invertHeadingPath', item.to); } catch (e) {}
+                setNavOpen(false);
+              }}
             >
               {item.label}
             </NavLink>
@@ -78,24 +81,24 @@ function NavBar() {
           {/* Auth‑dependent links */}
           {isAuthenticated && (
             <>
-              <NavLink to="/recommendations" className={navClass} onClick={() => setNavOpen(false)}>
+              <NavLink to="/recommendations" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/recommendations'); } catch(e){} setNavOpen(false); }}>
                 ✨ For You
               </NavLink>
-              <NavLink to="/my-tasks" className={navClass} onClick={() => setNavOpen(false)}>
+              <NavLink to="/my-tasks" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/my-tasks'); } catch(e){} setNavOpen(false); }}>
                 My Tasks
               </NavLink>
             </>
           )}
           {isAuthenticated && (
             <>
-              <NavLink to="/notifications" className={navClass} onClick={() => setNavOpen(false)}>
+              <NavLink to="/notifications" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/notifications'); } catch(e){} setNavOpen(false); }}>
                 📢 Notifications
               </NavLink>
-              <NavLink to="/profile" className={navClass} onClick={() => setNavOpen(false)}>
+              <NavLink to="/profile" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/profile'); } catch(e){} setNavOpen(false); }}>
                 Profile
               </NavLink>
               {user?.isAdmin && (
-                <NavLink to="/admin" className={navClass} onClick={() => setNavOpen(false)}>
+                <NavLink to="/admin" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/admin'); } catch(e){} setNavOpen(false); }}>
                   Admin Panel
                 </NavLink>
               )}
@@ -105,7 +108,7 @@ function NavBar() {
           {/* Unauthenticated links */}
           {!isAuthenticated ? (
             <>
-              <NavLink to="/auth" className={navClass} onClick={() => setNavOpen(false)}>
+              <NavLink to="/auth" className={navClass} onClick={() => { try { localStorage.setItem('invertHeadingPath', '/auth'); } catch(e){} setNavOpen(false); }}>
                 Login / Register
               </NavLink>
             </>

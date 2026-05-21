@@ -190,3 +190,117 @@ export async function deleteMessage(req, res, next) {
     return next(error);
   }
 }
+
+export async function sendPrivateMessage(req, res, next) {
+  try {
+    const { taskId } = req.params;
+    const { content, fileUrl = null, recipientId, parentMessageId = null } = req.body;
+
+    if (!content && !fileUrl) {
+      return res.status(400).json({ message: "Message content or file is required" });
+    }
+
+    // Verify both sender and recipient are participants of the task
+    const taskContext = await getTaskChatContext(taskId, req.user.id);
+    if (!taskContext) return res.status(403).json({ message: "Not authorized to message this task" });
+
+    // Check recipient is part of task participants
+    const participantCheck = await pool.query(
+      `SELECT 1 FROM (
+         SELECT creator_id AS participant_id FROM tasks WHERE id = $1
+         UNION ALL
+         SELECT assigned_solver_id AS participant_id FROM tasks WHERE id = $1 AND assigned_solver_id IS NOT NULL
+         UNION ALL
+         SELECT solver_id AS participant_id FROM proposals WHERE task_id = $1
+       ) participants WHERE participant_id = $2`,
+      [taskId, recipientId]
+    );
+
+    if (participantCheck.rowCount === 0) {
+      return res.status(403).json({ message: "Recipient not part of this task" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO messages (task_id, sender_id, recipient_id, parent_message_id, content, file_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, task_id, sender_id, recipient_id, parent_message_id, content, file_url, created_at`,
+      [taskId, req.user.id, recipientId, parentMessageId || null, content || null, fileUrl || null]
+    );
+
+    // Create notification for recipient
+    await createNotification(recipientId, taskId, "MESSAGE_RECEIVED", `Private message on task: ${taskContext.title}`);
+
+    return res.status(201).json({ message: result.rows[0] });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getPrivateMessages(req, res, next) {
+  try {
+    const { taskId, recipientId } = req.params;
+    // recipientId in URL is the other party's id; we should return messages between req.user.id and recipientId
+
+    const otherId = Number(recipientId);
+    const myId = req.user.id;
+
+    const task = await getTaskChatContext(taskId, req.user.id);
+    if (!task) return res.status(403).json({ message: "Not authorized to view this task chat" });
+
+    const result = await pool.query(
+      `SELECT m.*, u.name AS sender_name,
+              COALESCE((SELECT COUNT(*) FROM message_reads mr WHERE mr.message_id = m.id), 0) AS read_count,
+              CASE WHEN EXISTS (SELECT 1 FROM message_reads mr WHERE mr.message_id = m.id AND mr.user_id = $4) THEN true ELSE false END AS is_read_by_me
+       FROM messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.task_id = $1
+         AND (
+           (m.recipient_id IS NOT NULL AND ((m.sender_id = $2 AND m.recipient_id = $3) OR (m.sender_id = $3 AND m.recipient_id = $2)))
+         )
+       ORDER BY m.created_at ASC`,
+      [taskId, myId, otherId, myId]
+    );
+
+    // Build threaded structure by parent_message_id
+    const byId = new Map();
+    const roots = [];
+    for (const row of result.rows) {
+      byId.set(row.id, { ...row, replies: [] });
+    }
+    for (const row of result.rows) {
+      const current = byId.get(row.id);
+      if (row.parent_message_id && byId.has(row.parent_message_id)) {
+        byId.get(row.parent_message_id).replies.push(current);
+      } else {
+        roots.push(current);
+      }
+    }
+
+    return res.json({ messages: roots });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getPrivateUnreadCounts(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const result = await pool.query(
+      `SELECT task_id, COUNT(*) AS unread_count
+       FROM messages m
+       WHERE m.recipient_id = $1
+         AND NOT EXISTS (SELECT 1 FROM message_reads mr WHERE mr.message_id = m.id AND mr.user_id = $1)
+       GROUP BY task_id`,
+      [userId]
+    );
+
+    // return as map task_id => count
+    const map = {};
+    for (const row of result.rows) {
+      map[row.task_id] = Number(row.unread_count);
+    }
+    return res.json({ counts: map });
+  } catch (error) {
+    return next(error);
+  }
+}

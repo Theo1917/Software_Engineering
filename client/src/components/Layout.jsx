@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import { ToastProvider } from './ToastProvider';
+import { useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
+  const location = useLocation();
+  const [invert, setInvert] = useState(false);
+
+  useEffect(() => {
+    try {
+      const key = localStorage.getItem('invertHeadingPath');
+      setInvert(key === location.pathname);
+    } catch (e) {
+      setInvert(false);
+    }
+  }, [location]);
+
   return (
-    <div className="page-shell min-h-screen bg-obsidian text-text lg:pl-0">
+    <div className={`page-shell min-h-screen bg-obsidian text-text lg:pl-0 ${invert ? 'invert-headings' : ''}`}>
       {/* Skip link for keyboard users */}
       <a href="#main" className="sr-only focus:not-sr-only">Skip to main content</a>
       <Header />

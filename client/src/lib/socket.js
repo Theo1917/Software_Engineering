@@ -16,6 +16,14 @@ export function initSocket() {
   return socket;
 }
 
+export function identifySocketUser(userId) {
+  const activeSocket = getSocket();
+  if (userId !== undefined && userId !== null) {
+    activeSocket.emit("identify", userId);
+  }
+  return activeSocket;
+}
+
 export function getSocket() {
   return socket || initSocket();
 }

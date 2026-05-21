@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Mic, Send } from "lucide-react";
 import { getSocket, initSocket } from "../lib/socket";
 import { api } from "../lib/api";
 import Card from "./Card";
@@ -12,8 +13,10 @@ export default function ChatComponent({ taskId, userId, userName }) {
   const [attachmentDataUrl, setAttachmentDataUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [listening, setListening] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     // Initialize socket
@@ -55,6 +58,10 @@ export default function ChatComponent({ taskId, userId, userName }) {
       socketRef.current?.off("user-typing");
       socketRef.current?.off("user-stop-typing");
       socketRef.current?.off("read-receipt");
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+        recognitionRef.current = null;
+      }
     };
   }, [taskId]);
 
@@ -134,6 +141,66 @@ export default function ChatComponent({ taskId, userId, userName }) {
       setAttachmentDataUrl(String(reader.result || ""));
     };
     reader.readAsDataURL(file);
+  };
+
+  // Speech recognition (voice input) — graceful fallback
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition not supported in this browser');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript || '';
+        setNewMessage((prev) => (prev ? prev + ' ' + text : text));
+      };
+
+      recognition.onend = () => {
+        setListening(false);
+      };
+
+      recognition.onerror = (err) => {
+        console.error('Speech recognition error', err);
+        setListening(false);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      setListening(true);
+    } catch (e) {
+      console.error('Failed to start recognition', e);
+      alert('Unable to start speech recognition');
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+      recognitionRef.current = null;
+    }
+    setListening(false);
+  };
+
+  const speakText = (text) => {
+    if (!window.speechSynthesis) {
+      alert('Text-to-speech not supported in this browser');
+      return;
+    }
+    try {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      console.error('TTS error', e);
+    }
   };
 
   const handleSendMessage = () => {
@@ -229,18 +296,33 @@ export default function ChatComponent({ taskId, userId, userName }) {
             placeholder="Type your message..."
             className="flex-1 px-3 py-2 border border-white/10 rounded-lg text-sm bg-surface/80 text-text focus:outline-none focus:ring-2 focus:ring-white/50"
           />
-          <Button
-            onClick={handleSendMessage}
-            className="px-4 py-2 rounded-lg text-sm transition"
-          >
-            Send
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => (listening ? stopListening() : startListening())}
+              className={`px-3 py-2 rounded-lg text-sm transition border border-white/10 ${listening ? 'bg-white/6 text-text' : 'bg-white/3'}`}
+              aria-pressed={listening}
+              title={listening ? 'Stop voice input' : 'Start voice input'}
+              aria-label={listening ? 'Stop voice input' : 'Start voice input'}
+            >
+              <Mic size={16} />
+            </button>
+
+            <Button
+              onClick={handleSendMessage}
+              className="px-4 py-2 rounded-lg text-sm transition"
+              title="Send message"
+              aria-label="Send message"
+            >
+              <Send size={16} />
+            </Button>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <label className="text-xs text-text/60">
             Attachment
-            <input type="file" className="ml-2 text-xs" onChange={handleAttachmentChange} />
+            <input type="file" className="ml-2 text-xs" onChange={handleAttachmentChange} aria-label="Add attachment" title="Add attachment" />
           </label>
           {attachmentName && <span className="text-xs text-text/60">Selected: {attachmentName}</span>}
         </div>
@@ -272,9 +354,14 @@ function MessageBubble({ msg, userId, onReply, onShowAttachment }) {
       </div>
 
       <div className={`${isMine ? "flex justify-end" : "flex justify-start"}`}>
-        <Button type="button" variant="ghost" onClick={onReply} className="text-[11px] text-muted hover:text-text">
-          Reply
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={onReply} className="text-[11px] text-muted hover:text-text" title="Reply to message" aria-label="Reply to message">
+            Reply
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => speakText(msg.message || msg.content || '')} className="text-[11px] text-muted hover:text-text" title="Read message aloud" aria-label="Read message aloud">
+            Speak
+          </Button>
+        </div>
       </div>
 
       {Array.isArray(msg.replies) && msg.replies.length > 0 && (

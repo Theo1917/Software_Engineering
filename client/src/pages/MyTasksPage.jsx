@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
+import { identifySocketUser, initSocket } from "../lib/socket";
+import { useAuth } from "../context/AuthContext";
 
 const laneOrder = ["OPEN", "IN_NEGOTIATION", "IN_PROGRESS", "COMPLETED", "DISPUTED"];
 
@@ -18,9 +20,11 @@ const initialTaskForm = {
 
 export default function MyTasksPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [proposals, setProposals] = useState([]);
   const [error, setError] = useState("");
+  const [privateUnreadMap, setPrivateUnreadMap] = useState({});
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [form, setForm] = useState(initialTaskForm);
@@ -28,13 +32,15 @@ export default function MyTasksPage() {
   async function fetchWorkspaceData() {
     setError("");
     try {
-      const [tasksResponse, proposalsResponse] = await Promise.all([
+      const [tasksResponse, proposalsResponse, unreadResponse] = await Promise.all([
         api.get("/tasks/mine/created"),
         api.get("/tasks/mine/received-proposals"),
+        api.get('/messages/private/unread'),
       ]);
 
       setTasks(tasksResponse.data.tasks || []);
       setProposals(proposalsResponse.data.proposals || []);
+      setPrivateUnreadMap(unreadResponse.data.counts || {});
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to load creator workspace");
     }
@@ -42,7 +48,21 @@ export default function MyTasksPage() {
 
   useEffect(() => {
     fetchWorkspaceData();
-  }, []);
+    const socket = initSocket();
+    if (user?.id) {
+      identifySocketUser(user.id);
+    }
+    const handleUnreadUpdate = ({ taskId, unreadForTask, totalUnread }) => {
+      setPrivateUnreadMap((prev) => ({
+        ...prev,
+        [taskId]: Number(unreadForTask || 0),
+      }));
+    };
+    socket.on("private-unread-updated", handleUnreadUpdate);
+    return () => {
+      socket.off("private-unread-updated", handleUnreadUpdate);
+    };
+  }, [user?.id]);
 
   const laneMap = useMemo(() => {
     const map = {};
@@ -229,7 +249,12 @@ export default function MyTasksPage() {
               {(laneMap[lane] || []).map((task) => (
                 <div key={task.id} className="rounded-xl border border-white/10 p-3 bg-surface/80">
                   <p className="text-sm font-medium">{task.title}</p>
-                  <p className="text-xs text-text/60 mt-1">Proposals: {task.proposal_count}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-text/60 mt-1">Proposals: {task.proposal_count}</p>
+                    {privateUnreadMap[task.id] > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-white/6 px-2 py-0.5 text-xs font-semibold">{privateUnreadMap[task.id]}</span>
+                    )}
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {task.status === "OPEN" && (
                       <>

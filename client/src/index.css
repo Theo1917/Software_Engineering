@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --color-ink: #F5F5F5;
+  --color-ink: #E9EEF2;
   --color-neon: #FFFFFF;
   --color-cyan: #D1D5DB;
   --color-pink: #E5E7EB;
   --color-violet: #9CA3AF;
-  --bg-900: #000000;
-  --bg-800: #0A0A0A;
-  --surface: rgba(255,255,255,0.04);
-  --muted: #A1A1AA;
+  --bg-900: #0f1112; /* lighter black */
+  --bg-800: #121316; /* slightly lifted */
+  --surface: rgba(255,255,255,0.045);
+  --muted: #9AA0A6;
   color-scheme: dark;
   color: var(--color-ink);
   background:
-    radial-gradient(circle at 10% 12%, rgba(255, 255, 255, 0.08), transparent 26%),
-    radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.06), transparent 22%),
-    radial-gradient(circle at 50% 100%, rgba(10, 10, 10, 0.98), rgba(0, 0, 0, 1) 56%);
+    radial-gradient(circle at 10% 12%, rgba(255, 255, 255, 0.06), transparent 26%),
+    radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.05), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(20, 20, 20, 0.96), rgba(15,15,15,1) 56%);
 }
 
 * {
@@ -36,13 +36,12 @@ body {
   min-height: 100vh;
   font-family: "Space Grotesk", sans-serif;
   background:
-    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.08), transparent 24%),
-    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.1), transparent 20%),
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05), transparent 32%),
-    linear-gradient(180deg, #000000 0%, #090909 100%);
-  color: #E6EDF3;
+    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.06), transparent 24%),
+    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.07), transparent 20%),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 32%),
+    linear-gradient(180deg, var(--bg-900) 0%, var(--bg-800) 100%);
+  color: var(--color-ink);
   letter-spacing: 0.01em;
-  filter: grayscale(1);
 }
 
 ::selection {
@@ -92,7 +91,7 @@ body::before {
   inset: 0 auto auto 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, rgba(0, 255, 102, 0.9), rgba(255, 51, 102, 0.85));
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
   opacity: 0.7;
 }
 
@@ -102,7 +101,7 @@ body::before {
   inset: auto -25% -55% auto;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(0, 255, 102, 0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -118,7 +117,7 @@ body::before {
 
 .btn-primary {
   @apply btn bg-neon text-obsidian hover:-translate-y-0.5 hover:bg-neon/90;
-  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.35), 0 16px 32px rgba(0, 255, 102, 0.12);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 16px 32px rgba(255,255,255,0.04);
 }
 
 .btn-secondary {
@@ -127,6 +126,12 @@ body::before {
 
 .page-shell {
   position: relative;
+}
+
+/* Smooth transitions when theme or heading inversion toggles */
+.page-shell,
+.page-shell * {
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
 }
 
 .page-shell::before {
@@ -187,7 +192,7 @@ body::before {
   width: 160px;
   height: 160px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 51, 102, 0.13), transparent 68%);
+  background: radial-gradient(circle, rgba(255,255,255,0.03), transparent 68%);
   pointer-events: none;
 }
 
@@ -200,15 +205,15 @@ body::before {
 }
 
 .signal-badge.neon {
-  border-color: rgba(0, 255, 102, 0.25);
-  background: rgba(0, 255, 102, 0.09);
-  color: #00FF66;
+  border-color: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: var(--color-ink);
 }
 
 .signal-badge.pink {
-  border-color: rgba(255, 51, 102, 0.28);
-  background: rgba(255, 51, 102, 0.08);
-  color: #FF3366;
+  border-color: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: var(--color-ink);
 }
 
 .stack-list {
@@ -217,7 +222,7 @@ body::before {
 }
 
 .stack-list > * {
-  border-left: 2px solid rgba(0, 255, 102, 0.22);
+  border-left: 2px solid rgba(255,255,255,0.06);
   padding-left: 0.9rem;
 }
 
@@ -285,19 +290,15 @@ body::before {
 }
 
 [class*="text-blue"],
-[class*="text-sky"] {
-  color: #00FF66 !important;
-}
-
-[class*="text-emerald"] {
-  color: #00FF66 !important;
-}
-
+[class*="text-sky"],
+[class*="text-emerald"],
 [class*="text-amber"],
 [class*="text-yellow"],
 [class*="text-rose"],
-[class*="text-red"] {
-  color: #FF3366 !important;
+[class*="text-red"],
+[class*="text-ember"],
+[class*="text-mint"] {
+  color: var(--color-ink) !important;
 }
 
 [class*="text-purple"],
@@ -321,12 +322,8 @@ body::before {
   color: #E6EDF3 !important;
 }
 
-[class*="text-ember"] {
-  color: #FF3366 !important;
-}
-
-[class*="text-mint"] {
-  color: #00FF66 !important;
+[class*="text-ink"] {
+  color: #E6EDF3 !important;
 }
 
 [class*="border-ink"] {
@@ -354,6 +351,77 @@ body::before {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+/* ----------------------------- */
+/* Enforce strict black & white */
+/* Override any colorful utility classes to monochrome */
+[class*="text-emerald"],
+[class*="text-mint"],
+[class*="text-amber"],
+[class*="text-rose"],
+[class*="text-red"],
+[class*="text-ember"],
+[class*="text-neon"],
+[class*="text-pink"],
+[class*="text-blue"],
+[class*="text-sky"] {
+  color: var(--color-ink) !important;
+}
+
+[class*="bg-emerald"],
+[class*="bg-neon"],
+[class*="bg-rose"],
+[class*="bg-amber"],
+[class*="bg-red"],
+[class*="bg-pink"],
+[class*="bg-blue"],
+[class*="bg-sky"] {
+  background-color: rgba(255,255,255,0.04) !important;
+}
+
+[class*="border-emerald"],
+[class*="border-neon"],
+[class*="border-rose"],
+[class*="border-pink"],
+[class*="border-amber"],
+[class*="border-red"],
+[class*="border-blue"],
+[class*="border-sky"] {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Neutralize focus rings that reference neon/mint */
+[class*="ring-neon"],
+[class*="ring-mint"],
+[class*="focus-visible:ring-neon"] {
+  --tw-ring-color: rgba(255,255,255,0.35) !important;
+}
+
+/* Signal badges monochrome */
+.signal-badge.neon,
+.signal-badge.pink {
+  border-color: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: var(--color-ink);
+}
+
+/* Replace custom gradients used for accents with solid white */
+.h-10.w-1.rounded-full.bg-gradient-to-b.from-neon.to-danger,
+.h-10.w-1.rounded-full {
+  background: linear-gradient(#fff,#fff) !important;
+}
+
+/* End monochrome overrides */
+/* ----------------------------- */
+
+/* Danger / error token neutralization */
+.text-danger { color: var(--color-ink) !important; }
+.bg-danger { background-color: rgba(255,255,255,0.04) !important; }
+.border-danger { border-color: rgba(255,255,255,0.06) !important; }
+.hover\:border-danger:hover { border-color: rgba(255,255,255,0.08) !important; }
+.text-neon { color: var(--color-ink) !important; }
+.bg-neon { background-color: rgba(255,255,255,0.04) !important; }
+.border-neon { border-color: rgba(255,255,255,0.06) !important; }
+
 @media (max-width: 900px) {
   .hero-frame {
     grid-template-columns: 1fr;
@@ -373,4 +441,19 @@ body::before {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Invert headings color when a nav item was clicked for the current route */
+.invert-headings h1,
+.invert-headings h2,
+.invert-headings h3,
+.invert-headings h4,
+.invert-headings h5,
+.invert-headings h6 {
+  color: #0b0b0b !important;
+  transition: color 360ms ease;
+}
+
+.invert-headings .section-label {
+  color: #374151 !important;
 }
