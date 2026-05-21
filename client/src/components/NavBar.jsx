@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
 import { useState, useEffect, useRef, memo } from "react";
+import { Menu } from "lucide-react";
 import { navItems } from "./navItems";
 import { navClass } from "./navClass";
 
@@ -38,7 +39,7 @@ function NavBar() {
         onClick={() => setNavOpen(!navOpen)}
         aria-label="Toggle navigation menu"
       >
-        ☰
+        <Menu size={18} />
       </button>
 
       <aside
@@ -93,9 +94,6 @@ function NavBar() {
               <NavLink to="/profile" className={navClass} onClick={() => setNavOpen(false)}>
                 Profile
               </NavLink>
-              <NavLink to="/teams" className={navClass} onClick={() => setNavOpen(false)}>
-                Teams
-              </NavLink>
               {user?.isAdmin && (
                 <NavLink to="/admin" className={navClass} onClick={() => setNavOpen(false)}>
                   Admin Panel
@@ -107,11 +105,8 @@ function NavBar() {
           {/* Unauthenticated links */}
           {!isAuthenticated ? (
             <>
-              <NavLink to="/login" className={navClass} onClick={() => setNavOpen(false)}>
-                Login
-              </NavLink>
-              <NavLink to="/register" className={navClass} onClick={() => setNavOpen(false)}>
-                Register
+              <NavLink to="/auth" className={navClass} onClick={() => setNavOpen(false)}>
+                Login / Register
               </NavLink>
             </>
           ) : (

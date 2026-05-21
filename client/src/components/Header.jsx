@@ -25,24 +25,14 @@ export default function Header() {
               {item.label}
             </NavLink>
           ))}
-          {isAuthenticated && (
-            <>
-              <NavLink to="/recommendations" className={navClass}>✨ For You</NavLink>
-              <NavLink to="/my-tasks" className={navClass}>My Tasks</NavLink>
-            </>
-          )}
-          {isAuthenticated && (
-            <>
-              <NavLink to="/notifications" className={navClass}>📢 Notifications</NavLink>
-              <NavLink to="/profile" className={navClass}>Profile</NavLink>
-              <NavLink to="/teams" className={navClass}>Teams</NavLink>
-              {user?.isAdmin && <NavLink to="/admin" className={navClass}>Admin Panel</NavLink>}
-            </>
-          )}
+          {isAuthenticated && <NavLink to="/recommendations" className={navClass}>For You</NavLink>}
+          {isAuthenticated && <NavLink to="/my-tasks" className={navClass}>My Tasks</NavLink>}
+          {isAuthenticated && <NavLink to="/notifications" className={navClass}>Notifications</NavLink>}
+          {isAuthenticated && <NavLink to="/profile" className={navClass}>Profile</NavLink>}
+          {isAuthenticated && user?.isAdmin && <NavLink to="/admin" className={navClass}>Admin Panel</NavLink>}
           {!isAuthenticated ? (
             <>
-              <NavLink to="/login" className={navClass}>Login</NavLink>
-              <NavLink to="/register" className={navClass}>Register</NavLink>
+              <NavLink to="/auth" className={navClass}>Login / Register</NavLink>
             </>
           ) : (
             <Button variant="danger" onClick={logout}>
@@ -86,19 +76,16 @@ export default function Header() {
             {isAuthenticated && (
               <>
                 <NavLink to="/recommendations" className={navClass} onClick={() => setMenuOpen(false)}>
-                  ✨ For You
+                  For You
                 </NavLink>
                 <NavLink to="/my-tasks" className={navClass} onClick={() => setMenuOpen(false)}>
                   My Tasks
                 </NavLink>
                 <NavLink to="/notifications" className={navClass} onClick={() => setMenuOpen(false)}>
-                  📢 Notifications
+                  Notifications
                 </NavLink>
                 <NavLink to="/profile" className={navClass} onClick={() => setMenuOpen(false)}>
                   Profile
-                </NavLink>
-                <NavLink to="/teams" className={navClass} onClick={() => setMenuOpen(false)}>
-                  Teams
                 </NavLink>
                 {user?.isAdmin && (
                   <NavLink to="/admin" className={navClass} onClick={() => setMenuOpen(false)}>
@@ -109,11 +96,8 @@ export default function Header() {
             )}
             {!isAuthenticated ? (
               <>
-                <NavLink to="/login" className={navClass} onClick={() => setMenuOpen(false)}>
-                  Login
-                </NavLink>
-                <NavLink to="/register" className={navClass} onClick={() => setMenuOpen(false)}>
-                  Register
+                <NavLink to="/auth" className={navClass} onClick={() => setMenuOpen(false)}>
+                  Login / Register
                 </NavLink>
               </>
             ) : (

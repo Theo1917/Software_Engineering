@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <p className="text-sm text-text/70">
-        Back to <Link to="/login" className="text-danger font-semibold">Login</Link>
+        Back to <Link to="/auth" className="text-danger font-semibold">Login</Link>
       </p>
     </section>
   );

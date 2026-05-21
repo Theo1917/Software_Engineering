@@ -5,9 +5,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
-const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const TasksPage = lazy(() => import("./pages/TasksPage"));
 const TaskDetailsPage = lazy(() => import("./pages/TaskDetailsPage"));
 const MyTasksPage = lazy(() => import("./pages/MyTasksPage"));
@@ -19,7 +18,6 @@ const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const AdvancedSearchPage = lazy(() => import("./pages/AdvancedSearchPage"));
 const TrendingTasksPage = lazy(() => import("./pages/TrendingTasksPage"));
 const SmartRecommendationsPage = lazy(() => import("./pages/SmartRecommendationsPage"));
-const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const DeploymentAssistantPage = lazy(() => import("./pages/DeploymentAssistantPage"));
 const TechNewsPage = lazy(() => import("./pages/TechNewsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -32,9 +30,10 @@ export default function App() {
       <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading…</div>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/register" element={<Navigate to="/auth" replace />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/task/:taskId" element={<TaskDetailsPage />} />
           <Route
@@ -70,7 +69,8 @@ export default function App() {
             }
           />
           <Route path="/discussions" element={<DiscussionsPage />} />
-          <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+          <Route path="/discussions/:postId" element={<DiscussionsPage />} />
+          <Route path="/knowledge-base" element={<Navigate to="/tasks" replace />} />
           <Route path="/deployment-assistant" element={<DeploymentAssistantPage />} />
           <Route path="/tech-news" element={<TechNewsPage />} />
           <Route

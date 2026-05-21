@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Sparkles, TrendingUp, Loader, AlertCircle } from 'lucide-react';
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
+import { api } from "../lib/api";
 
 export default function SmartRecommendationsPage() {
   const [recommendations, setRecommendations] = useState([]);
@@ -15,8 +15,9 @@ export default function SmartRecommendationsPage() {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/tasks-advanced/recommendations/smart?limit=15');
+        const response = await api.get('/tasks-advanced/recommendations/smart?limit=15');
         setRecommendations(response.data.tasks);
+        setError('');
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch recommendations');
       } finally {

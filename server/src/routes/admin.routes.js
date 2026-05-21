@@ -91,6 +91,29 @@ router.post("/users/:userId/unsuspend", requireAuth, checkAdmin, async (req, res
   }
 });
 
+// Delete user
+router.delete("/users/:userId", requireAuth, checkAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required" });
+    }
+
+    const result = await adminController.deleteUser(
+      req.user.id,
+      parseInt(userId),
+      reason,
+      req.ip
+    );
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get flagged content
 router.get("/flagged-content", requireAuth, checkAdmin, async (req, res) => {
   try {

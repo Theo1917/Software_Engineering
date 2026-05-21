@@ -21,7 +21,16 @@ async function loadNotificationPreferences(userId) {
 }
 
 function notificationGroup(notificationType) {
-  if (["PROPOSAL_ACCEPTED", "PROPOSAL_REJECTED", "TASK_ASSIGNED", "TASK_APPROVED", "TASK_DISPUTED", "DISPUTE_RESOLVED"].includes(notificationType)) {
+  if ([
+    "PROPOSAL_ACCEPTED",
+    "PROPOSAL_REJECTED",
+    "PROPOSAL_RECEIVED",
+    "MESSAGE_RECEIVED",
+    "TASK_ASSIGNED",
+    "TASK_APPROVED",
+    "TASK_DISPUTED",
+    "DISPUTE_RESOLVED",
+  ].includes(notificationType)) {
     return "task_updates";
   }
 

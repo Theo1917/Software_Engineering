@@ -55,6 +55,11 @@ export default function TasksPage() {
     }
   }
 
+  function handleSearchSubmit(event) {
+    event.preventDefault();
+    fetchTasks(filters, search);
+  }
+
   useEffect(() => {
     fetchTasks();
     fetchDiscoveryLists();
@@ -189,55 +194,68 @@ export default function TasksPage() {
         <h1 className="text-2xl font-semibold">Task Board</h1>
         <p className="text-sm text-text/70 mt-1">Open opportunities from the community.</p>
 
-        <div className="grid gap-2 sm:grid-cols-5 mt-4">
-          <Input
-            className="sm:col-span-2"
-            label="Search tasks"
-            placeholder="Search title, description, or tech stack"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <Input
-            label="Skill"
-            placeholder="Skill"
-            value={filters.skill}
-            onChange={(event) => setFilters((prev) => ({ ...prev, skill: event.target.value }))}
-          />
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-text">Difficulty</span>
-            <select
-              className="input"
-              value={filters.difficulty}
-              onChange={(event) => setFilters((prev) => ({ ...prev, difficulty: event.target.value }))}
-            >
-            <option value="">Any Difficulty</option>
-            <option value="BEGINNER">Beginner</option>
-            <option value="INTERMEDIATE">Intermediate</option>
-            <option value="ADVANCED">Advanced</option>
-            </select>
-          </label>
-          <Input
-            label="Min budget"
-            type="number"
-            min="0"
-            placeholder="Min Budget"
-            value={filters.minBudget}
-            onChange={(event) => setFilters((prev) => ({ ...prev, minBudget: event.target.value }))}
-          />
-          <Input
-            label="Max budget"
-            type="number"
-            min="0"
-            placeholder="Max Budget"
-            value={filters.maxBudget}
-            onChange={(event) => setFilters((prev) => ({ ...prev, maxBudget: event.target.value }))}
-          />
-        </div>
+        <form onSubmit={handleSearchSubmit} className="mt-4 space-y-4">
+          <div className="grid gap-2 sm:grid-cols-5">
+            <Input
+              className="sm:col-span-2"
+              label="Search tasks"
+              placeholder="Search title, description, or tech stack"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Input
+              label="Skill"
+              placeholder="Skill"
+              value={filters.skill}
+              onChange={(event) => setFilters((prev) => ({ ...prev, skill: event.target.value }))}
+            />
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-text">Difficulty</span>
+              <select
+                className="input"
+                value={filters.difficulty}
+                onChange={(event) => setFilters((prev) => ({ ...prev, difficulty: event.target.value }))}
+              >
+                <option value="">Any Difficulty</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+              </select>
+            </label>
+            <Input
+              label="Min budget"
+              type="number"
+              min="0"
+              placeholder="Min Budget"
+              value={filters.minBudget}
+              onChange={(event) => setFilters((prev) => ({ ...prev, minBudget: event.target.value }))}
+            />
+            <Input
+              label="Max budget"
+              type="number"
+              min="0"
+              placeholder="Max Budget"
+              value={filters.maxBudget}
+              onChange={(event) => setFilters((prev) => ({ ...prev, maxBudget: event.target.value }))}
+            />
+          </div>
 
-        <div className="mt-3 flex gap-2">
-          <Button variant="secondary" onClick={fetchTasks}>Apply Filters</Button>
-          <Button variant="secondary" onClick={() => { const clearedFilters = { skill: "", difficulty: "", minBudget: "", maxBudget: "" }; setSearch(""); setFilters(clearedFilters); fetchTasks(clearedFilters, ""); }}>Reset</Button>
-        </div>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary">Search</Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                const clearedFilters = { skill: "", difficulty: "", minBudget: "", maxBudget: "" };
+                setSearch("");
+                setFilters(clearedFilters);
+                fetchTasks(clearedFilters, "");
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+        </form>
       </Card>
 
       {isAuthenticated && (
@@ -373,7 +391,7 @@ export default function TasksPage() {
                     <Button variant="secondary" onClick={() => toggleSavedTask(task.id)}>{savedTaskIds.has(task.id) ? "Unsave" : "Save Task"}</Button>
                   </>
                 ) : (
-                  <Link to="/login"><Button variant="secondary">Login to Apply</Button></Link>
+                  <Link to="/auth"><Button variant="secondary">Login to Apply</Button></Link>
                 )}
               </div>
             </Card>

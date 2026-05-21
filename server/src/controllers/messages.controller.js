@@ -1,4 +1,22 @@
 import { pool } from "../config/db.js";
+import { createNotification } from "./notifications.controller.js";
+
+async function getTaskChatContext(taskId, userId) {
+  const taskResult = await pool.query(
+    `SELECT t.id, t.creator_id, t.assigned_solver_id, t.title,
+            EXISTS (SELECT 1 FROM proposals p WHERE p.task_id = t.id AND p.solver_id = $2) AS has_proposal
+     FROM tasks t
+     WHERE t.id = $1
+       AND (
+         t.creator_id = $2
+         OR t.assigned_solver_id = $2
+         OR EXISTS (SELECT 1 FROM proposals p WHERE p.task_id = t.id AND p.solver_id = $2)
+       )`,
+    [taskId, userId]
+  );
+
+  return taskResult.rows[0] || null;
+}
 
 export async function sendMessage(req, res, next) {
   try {
@@ -9,13 +27,9 @@ export async function sendMessage(req, res, next) {
       return res.status(400).json({ message: "Message content or file is required" });
     }
 
-    // Verify user is part of this task chat
-    const taskResult = await pool.query(
-      `SELECT * FROM tasks WHERE id = $1 AND (creator_id = $2 OR assigned_solver_id = $2)`,
-      [taskId, req.user.id]
-    );
+    const task = await getTaskChatContext(taskId, req.user.id);
 
-    if (taskResult.rowCount === 0) {
+    if (!task) {
       return res.status(403).json({ message: "Not authorized to message this task" });
     }
 
@@ -37,6 +51,30 @@ export async function sendMessage(req, res, next) {
       [taskId, req.user.id, parentMessageId, content || null, fileUrl || null]
     );
 
+    const participantResult = await pool.query(
+      `SELECT DISTINCT participant_id
+       FROM (
+         SELECT creator_id AS participant_id FROM tasks WHERE id = $1
+         UNION ALL
+         SELECT assigned_solver_id AS participant_id FROM tasks WHERE id = $1 AND assigned_solver_id IS NOT NULL
+         UNION ALL
+         SELECT solver_id AS participant_id FROM proposals WHERE task_id = $1
+       ) participants
+       WHERE participant_id IS NOT NULL AND participant_id <> $2`,
+      [taskId, req.user.id]
+    );
+
+    await Promise.all(
+      participantResult.rows.map((row) =>
+        createNotification(
+          row.participant_id,
+          taskId,
+          "MESSAGE_RECEIVED",
+          `New message on task: ${task.title}`
+        )
+      )
+    );
+
     return res.status(201).json({ message: result.rows[0] });
   } catch (error) {
     return next(error);
@@ -48,13 +86,9 @@ export async function getMessages(req, res, next) {
     const { taskId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
-    // Verify user is part of this task chat
-    const taskResult = await pool.query(
-      `SELECT * FROM tasks WHERE id = $1 AND (creator_id = $2 OR assigned_solver_id = $2)`,
-      [taskId, req.user.id]
-    );
+    const task = await getTaskChatContext(taskId, req.user.id);
 
-    if (taskResult.rowCount === 0) {
+    if (!task) {
       return res.status(403).json({ message: "Not authorized to view this task chat" });
     }
 
@@ -113,7 +147,8 @@ export async function markMessageRead(req, res, next) {
     }
 
     const message = messageResult.rows[0];
-    if (message.creator_id !== req.user.id && message.assigned_solver_id !== req.user.id) {
+    const task = await getTaskChatContext(message.task_id, req.user.id);
+    if (!task) {
       return res.status(403).json({ message: "Not authorized" });
     }
 

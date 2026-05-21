@@ -306,6 +306,7 @@ export default function KnowledgeBasePage() {
   }, [selectedArticle, user]);
 
   const canModerateArticle = Boolean(user?.isAdmin);
+  const canInteractWithArticle = Boolean(isAuthenticated);
 
   const selectedTags = selectedArticle?.tags || [];
 
@@ -490,11 +491,17 @@ export default function KnowledgeBasePage() {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'UP')}>👍</Button>
-                  <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'DOWN')}>👎</Button>
-                  <Button variant="secondary" className={`${selectedArticle.bookmarked_by_user ? 'bg-neon/10' : ''}`} onClick={() => handleToggleBookmark(selectedArticle.id)}>
-                    {selectedArticle.bookmarked_by_user ? 'Bookmarked' : 'Bookmark'}
-                  </Button>
+                  {canInteractWithArticle ? (
+                    <>
+                      <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'UP')}>👍</Button>
+                      <Button variant="ghost" onClick={() => handleVote(selectedArticle.id, 'DOWN')}>👎</Button>
+                      <Button variant="secondary" className={`${selectedArticle.bookmarked_by_user ? 'bg-white/10' : ''}`} onClick={() => handleToggleBookmark(selectedArticle.id)}>
+                        {selectedArticle.bookmarked_by_user ? 'Bookmarked' : 'Bookmark'}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onClick={() => navigate("/auth")}>Login to interact</Button>
+                  )}
                 </div>
               </div>
 

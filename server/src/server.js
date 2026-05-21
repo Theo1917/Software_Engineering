@@ -93,6 +93,8 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_solver_id INTEGER REFERENCES users(id) ON DELETE SET NULL");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE");
+  await pool.query("ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'PROPOSAL_RECEIVED'");
+  await pool.query("ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'MESSAGE_RECEIVED'");
 
   console.log("DB migration: schema ensured from schema.sql");
 }

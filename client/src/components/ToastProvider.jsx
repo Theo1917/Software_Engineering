@@ -31,8 +31,8 @@ export function ToastProvider({ children }) {
           <div
             key={t.id}
             className={`px-4 py-2 rounded-md shadow-md text-sm font-medium transition-opacity duration-300
-              ${t.type === "success" ? "bg-emerald-600/90 text-emerald-100" : ""}
-              ${t.type === "error" ? "bg-red-600/90 text-red-100" : ""}
+              ${t.type === "success" ? "bg-white/15 text-text" : ""}
+              ${t.type === "error" ? "bg-white/15 text-text" : ""}
               ${t.type === "info" ? "bg-surface/95 text-text" : ""}`}
           >
             {t.message}

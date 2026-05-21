@@ -7,7 +7,7 @@ import Badge from "../components/Badge";
 
 export default function AdvancedSearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState({ tasks: [], posts: [], people: [], knowledgeBase: [], total: 0 });
+  const [results, setResults] = useState({ tasks: [], posts: [], people: [], total: 0 });
   const [facets, setFacets] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function AdvancedSearchPage() {
   
   // Filter state
   const [filters, setFilters] = useState({
-    types: ['tasks', 'posts', 'people', 'knowledge-base'],
+    types: ['tasks', 'posts', 'people'],
     difficulty: '',
     minBudget: '',
     maxBudget: '',
@@ -118,19 +118,6 @@ export default function AdvancedSearchPage() {
     setFilters(search.filters);
   };
 
-  const requestKnowledgeBaseArticle = async () => {
-    try {
-      await axios.post('/api/knowledge-base/gaps', {
-        queryText: query,
-        source: 'SEARCH_PAGE',
-        resultCount: results.knowledgeBase.length,
-      });
-      setRequestMessage(`Requested a KB article for "${query}".`);
-    } catch (err) {
-      setRequestMessage(err.response?.data?.message || 'Unable to request a KB article');
-    }
-  };
-
   const toggleFilter = (type) => {
     setFilters(prev => ({
       ...prev,
@@ -166,7 +153,7 @@ export default function AdvancedSearchPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tasks, discussions, people, knowledge base, and skills..."
+              placeholder="Search tasks, discussions, people, and skills..."
               className="w-full pl-12 pr-4 py-3 bg-[#1a1f3a] text-white placeholder-gray-500 rounded-lg border border-cyan-500/30 focus:border-cyan-500 focus:outline-none transition"
             />
             {suggestions.length > 0 && (
@@ -205,7 +192,7 @@ export default function AdvancedSearchPage() {
               {/* Result Type Filters */}
               <div className="bg-[#1a1f3a] rounded-lg border border-cyan-500/20 p-4">
                 <h3 className="text-sm font-semibold text-cyan-400 mb-3">Result Types</h3>
-                {['tasks', 'posts', 'people', 'knowledge-base'].map(type => (
+                {['tasks', 'posts', 'people'].map(type => (
                   <label key={type} className="flex items-center gap-2 text-sm text-gray-400 mb-2 cursor-pointer hover:text-gray-300">
                     <input
                       type="checkbox"
@@ -213,7 +200,7 @@ export default function AdvancedSearchPage() {
                       onChange={() => toggleFilter(type)}
                       className="w-4 h-4 rounded"
                     />
-                    {type === 'knowledge-base' ? 'Knowledge Base' : type.charAt(0).toUpperCase() + type.slice(1)}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </label>
                 ))}
               </div>
@@ -364,40 +351,6 @@ export default function AdvancedSearchPage() {
               </div>
             )}
 
-            {results.knowledgeBase.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-cyan-400 mb-4">Knowledge Base ({results.knowledgeBase.length})</h2>
-                <div className="space-y-3">
-                  {results.knowledgeBase.map(article => (
-                    <Card key={article.id} className="rounded-lg p-4 hover:border-cyan-500/50 transition bg-[#1a1f3a] border-cyan-500/20">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white hover:text-cyan-400 cursor-pointer">{article.title}</h3>
-                          <p className="text-sm text-gray-400 mt-1 line-clamp-2">{article.summary || article.content}</p>
-                          <div className="flex gap-2 mt-2 flex-wrap">
-                            {article.category_name && (
-                              <Badge tone="neon" className="text-xs px-2 py-1">{article.category_name}</Badge>
-                            )}
-                            <Badge className="text-xs px-2 py-1">{article.difficulty}</Badge>
-                            {article.read_time_minutes != null && (
-                              <Badge className="text-xs px-2 py-1">{article.read_time_minutes} min read</Badge>
-                            )}
-                            {Array.isArray(article.tags) && article.tags.slice(0, 4).map(tag => (
-                              <Badge key={tag} className="text-xs px-2 py-1">#{tag}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-right text-xs text-gray-500">
-                          <div>{article.score ?? 0} helpful</div>
-                          <div>{article.view_count ?? 0} views</div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {results.people.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-cyan-400 mb-4">People ({results.people.length})</h2>
@@ -416,14 +369,10 @@ export default function AdvancedSearchPage() {
               </div>
             )}
 
-            {!loading && query && results.knowledgeBase.length === 0 && (
-              <div className="mt-8 rounded-lg border border-cyan-500/20 bg-[#1a1f3a] p-4">
-                <h2 className="text-lg font-semibold text-cyan-400">No Knowledge Base results</h2>
-                <p className="mt-1 text-sm text-gray-400">Turn this search into a missing-article request.</p>
-                <Button type="button" onClick={requestKnowledgeBaseArticle} className="mt-3 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition text-sm font-medium">
-                  Request KB Article
-                </Button>
-                {requestMessage && <p className="mt-2 text-sm text-gray-300">{requestMessage}</p>}
+            {query && results.total === 0 && !loading && (
+              <div className="mt-8 rounded-lg border border-white/10 bg-white/5 p-4">
+                <h2 className="text-lg font-semibold text-text">No results found</h2>
+                <p className="mt-1 text-sm text-text/60">Try a different keyword or loosen your filters.</p>
               </div>
             )}
           </div>

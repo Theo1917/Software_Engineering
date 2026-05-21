@@ -117,11 +117,13 @@ export default function NotificationsPage() {
     const icons = {
       PROPOSAL_ACCEPTED: "✓",
       PROPOSAL_REJECTED: "✗",
+      PROPOSAL_RECEIVED: "💬",
       TASK_ASSIGNED: "🎯",
       SUBMISSION_RECEIVED: "📤",
       TASK_APPROVED: "✓",
       TASK_DISPUTED: "⚠️",
       DISPUTE_RESOLVED: "✓",
+      MESSAGE_RECEIVED: "💬",
     };
     return icons[type] || "📢";
   };
@@ -130,11 +132,13 @@ export default function NotificationsPage() {
     const colors = {
       PROPOSAL_ACCEPTED: "bg-green-50 border-green-200",
       PROPOSAL_REJECTED: "bg-red-50 border-red-200",
+      PROPOSAL_RECEIVED: "bg-blue-50 border-blue-200",
       TASK_ASSIGNED: "bg-blue-50 border-blue-200",
       SUBMISSION_RECEIVED: "bg-purple-50 border-purple-200",
       TASK_APPROVED: "bg-green-50 border-green-200",
       TASK_DISPUTED: "bg-yellow-50 border-yellow-200",
       DISPUTE_RESOLVED: "bg-green-50 border-green-200",
+      MESSAGE_RECEIVED: "bg-blue-50 border-blue-200",
     };
     return colors[type] || "bg-gray-50 border-gray-200";
   };

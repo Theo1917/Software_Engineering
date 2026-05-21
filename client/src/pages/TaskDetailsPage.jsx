@@ -61,6 +61,7 @@ export default function TaskDetailsPage() {
       });
       setError("");
       await fetchTaskDetails();
+      setShowChat(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to submit proposal");
     }
@@ -114,18 +115,6 @@ export default function TaskDetailsPage() {
     }
   }
 
-  async function handleCreateKnowledgeBaseDraft() {
-    try {
-      setKBDrafting(true);
-      const response = await api.post(`/knowledge-base/synthesize/task/${taskId}`);
-      navigate("/knowledge-base", { state: { draftArticleId: response.data.article.id } });
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to create knowledge base draft");
-    } finally {
-      setKBDrafting(false);
-    }
-  }
-
   function handleRateTask() {
     navigate(`/task/${taskId}/rate`);
   }
@@ -152,6 +141,8 @@ export default function TaskDetailsPage() {
   const isInNegotiation = task.status === "IN_NEGOTIATION";
   const isInProgress = task.status === "IN_PROGRESS";
   const isUnderReview = task.status === "UNDER_REVIEW";
+  const hasProposalAccess = proposals.some((proposal) => proposal.solver_id === user?.id);
+  const canOpenChat = isCreator || isSolver || hasProposalAccess;
 
   const taskActions = [];
 
@@ -206,14 +197,6 @@ export default function TaskDetailsPage() {
     );
   }
 
-  if (task.status === "COMPLETED" && (isCreator || isSolver || user?.isAdmin)) {
-    taskActions.push(
-      <Button key="create-kb-draft" variant="secondary" onClick={handleCreateKnowledgeBaseDraft} disabled={kbDrafting}>
-        {kbDrafting ? "Drafting KB Article..." : "Create KB Draft"}
-      </Button>
-    );
-  }
-
   return (
     <section className="space-y-6 fade-in">
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -252,7 +235,7 @@ export default function TaskDetailsPage() {
               <p className="text-sm font-medium text-text">Want to take up this task?</p>
               <p className="text-sm text-text/70">Log in to submit a proposal and start negotiation with the creator.</p>
             </div>
-            <Link to="/login" className="btn-primary inline-flex justify-center">
+            <Link to="/auth" className="btn-primary inline-flex justify-center">
               Login to Propose
             </Link>
           </div>
@@ -263,15 +246,35 @@ export default function TaskDetailsPage() {
         </Card>
       )}
 
-      {(isCreator || isSolver) && isInProgress && (
-        <div className="card">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">Task Chat Room</h2>
-            <button onClick={() => setShowChat((current) => !current)} className="text-sm text-neon hover:text-neon/80">
-              {showChat ? "Hide Chat" : "Show Chat"}
+      {canOpenChat && (isInProgress || isInNegotiation || task.status === "OPEN") && (
+        <div className="fixed bottom-6 right-6 z-40 w-[min(92vw,28rem)]">
+          {showChat ? (
+            <div className="rounded-[1.4rem] border border-white/10 bg-obsidian/95 shadow-2xl backdrop-blur-md">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <div>
+                  <h2 className="text-lg font-semibold">Project Chat</h2>
+                  <p className="text-xs text-text/60">
+                    {isCreator
+                      ? "Talk with people who submitted proposals."
+                      : "Keep the discussion here after you submit a proposal."}
+                  </p>
+                </div>
+                <button onClick={() => setShowChat(false)} className="text-sm text-text/70 hover:text-text">
+                  Hide
+                </button>
+              </div>
+              <div className="p-3">
+                <ChatComponent taskId={task.id} userId={user?.id} userName={user?.name} />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowChat(true)}
+              className="ml-auto block rounded-full border border-white/10 bg-white px-4 py-3 text-sm font-semibold text-obsidian shadow-lg"
+            >
+              Open Project Chat
             </button>
-          </div>
-          {showChat && <ChatComponent taskId={task.id} userId={user?.id} userName={user?.name} />}
+          )}
         </div>
       )}
 

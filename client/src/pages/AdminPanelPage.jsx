@@ -62,6 +62,20 @@ export default function AdminPanelPage() {
     }
   }
 
+  async function handleDeleteUser(userId) {
+    const reason = window.prompt("Enter deletion reason:");
+    if (!reason) return;
+
+    if (!window.confirm("Delete this user and all related content?")) return;
+
+    try {
+      await api.delete(`/admin/users/${userId}`, { data: { reason } });
+      await loadDashboard();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete user");
+    }
+  }
+
   async function handleUnsuspendUser(userId) {
     try {
       await api.post(`/admin/users/${userId}/unsuspend`);
@@ -195,6 +209,7 @@ export default function AdminPanelPage() {
                     <p className="font-medium">{user.name}</p>
                     <p className="text-xs text-text/60">{user.email}</p>
                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {user.is_admin && <span className="rounded-full bg-neon/15 px-2 py-1 text-neon">Admin</span>}
                       <span className="rounded-full bg-neon/15 px-2 py-1 text-neon">Reputation {user.reputation}</span>
                       <span className="rounded-full bg-neon/10 px-2 py-1 text-neon">
                         {user.tasks_completed} completed
@@ -208,9 +223,27 @@ export default function AdminPanelPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" className="text-sm" onClick={() => { const reason = window.prompt("Enter suspension reason:"); if (reason) handleSuspendUser(user.id, reason); }}>Suspend</Button>
-                    {user.moderation_status === "SUSPENDED" && (
-                      <Button variant="secondary" className="text-sm" onClick={() => handleUnsuspendUser(user.id)}>Unsuspend</Button>
+                    {!user.is_admin && (
+                      <Button
+                        variant="secondary"
+                        className="text-sm"
+                        onClick={() => {
+                          const reason = window.prompt("Enter ban reason:");
+                          if (reason) handleSuspendUser(user.id, reason);
+                        }}
+                      >
+                        Ban
+                      </Button>
+                    )}
+                    {!user.is_admin && user.moderation_status === "SUSPENDED" && (
+                      <Button variant="secondary" className="text-sm" onClick={() => handleUnsuspendUser(user.id)}>
+                        Unban
+                      </Button>
+                    )}
+                    {!user.is_admin && (
+                      <Button variant="danger" className="text-sm" onClick={() => handleDeleteUser(user.id)}>
+                        Delete User
+                      </Button>
                     )}
                   </div>
                 </div>

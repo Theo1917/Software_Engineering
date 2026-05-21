@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -59,14 +60,17 @@ export default function TechNewsPage() {
 
         <div className="space-y-3">
           {posts.map((post) => (
-            <Card key={post.id}>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">{post.title}</h2>
+            <Link key={post.id} to={`/discussions/${post.id}`} className="block">
+              <Card className="transition hover:border-neon/30 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-base font-semibold">{post.title}</h2>
                   <Badge tone="pink" className="text-xs px-2 py-1">{post.category}</Badge>
-              </div>
-              <p className="text-sm text-text/80 mt-2">{post.content}</p>
-              <p className="text-xs text-text/60 mt-2">By {post.author_name}</p>
-            </Card>
+                </div>
+                <p className="text-sm text-text/80 mt-2 line-clamp-3">{post.content}</p>
+                <p className="text-xs text-text/60 mt-2">By {post.author_name}</p>
+                <p className="mt-3 text-xs font-medium text-neon">Read full discussion</p>
+              </Card>
+            </Link>
           ))}
           {posts.length === 0 && <p className="text-sm text-text/60">No posts in this category yet.</p>}
         </div>
@@ -78,12 +82,15 @@ export default function TechNewsPage() {
 
         <div className="mt-4 space-y-3">
           {trending.map((post) => (
-            <Card key={post.id} className="rounded-xl p-3 bg-surface/80">
-              <p className="text-sm font-medium">{post.title}</p>
-              <p className="text-xs text-text/60 mt-1">
-                Score: {post.score} | Comments: {post.comment_count}
-              </p>
-            </Card>
+            <Link key={post.id} to={`/discussions/${post.id}`} className="block">
+              <Card className="rounded-xl p-3 bg-surface/80 transition hover:border-neon/30 hover:-translate-y-0.5">
+                <p className="text-sm font-medium">{post.title}</p>
+                <p className="text-xs text-text/60 mt-1">
+                  Score: {post.score} | Comments: {post.comment_count}
+                </p>
+                <p className="mt-2 text-xs font-medium text-neon">Open discussion</p>
+              </Card>
+            </Link>
           ))}
           {trending.length === 0 && <p className="text-sm text-text/60">No trending data yet.</p>}
         </div>

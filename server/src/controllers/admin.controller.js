@@ -6,6 +6,7 @@ export async function getAllUsers(limit = 50, offset = 0) {
   try {
     const result = await db.query(
       `SELECT u.id, u.name, u.email, u.reputation, u.skills, u.created_at,
+              u.is_admin,
               COALESCE(um.status, 'ACTIVE') as moderation_status,
               COALESCE(ua.tasks_completed, 0) as tasks_completed,
               COALESCE(ua.average_rating, 0) as average_rating
@@ -20,6 +21,50 @@ export async function getAllUsers(limit = 50, offset = 0) {
     return result.rows;
   } catch (error) {
     console.error("Error fetching users:", error);
+    throw error;
+  }
+}
+
+// Delete user (admin action)
+export async function deleteUser(adminId, userId, reason, ipAddress) {
+  try {
+    const adminCheck = await db.query("SELECT is_admin FROM users WHERE id = $1", [adminId]);
+
+    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
+    if (adminId === userId) {
+      throw new Error("You cannot delete your own admin account");
+    }
+
+    const userResult = await db.query("SELECT id, is_admin FROM users WHERE id = $1", [userId]);
+
+    if (userResult.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    if (userResult.rows[0].is_admin) {
+      throw new Error("Admin accounts cannot be deleted from the admin panel");
+    }
+
+    await logSystemActivity(adminId, "DELETE_USER", "user", userId, { reason }, ipAddress);
+
+    await db.query(
+      `INSERT INTO admin_actions (admin_id, action, target_user_id, reason)
+       VALUES ($1, $2, $3, $4)`,
+      [adminId, "DELETE_USER", userId, reason]
+    );
+
+    const deleteResult = await db.query("DELETE FROM users WHERE id = $1", [userId]);
+
+    if (deleteResult.rowCount === 0) {
+      throw new Error("User not found");
+    }
+
+    return { success: true, message: "User deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting user:", error);
     throw error;
   }
 }

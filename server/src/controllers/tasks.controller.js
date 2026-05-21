@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { createNotification } from "./notifications.controller.js";
 
 export async function listTasks(req, res, next) {
   try {
@@ -317,6 +318,13 @@ export async function createProposal(req, res, next) {
        VALUES ($1, $2, $3, $4, 'SUBMITTED')
        RETURNING *`,
       [id, req.user.id, message, Number(bidAmount)]
+    );
+
+    await createNotification(
+      task.creator_id,
+      task.id,
+      "PROPOSAL_RECEIVED",
+      `New proposal on task: ${task.title}`
     );
 
     return res.status(201).json({ proposal: result.rows[0] });

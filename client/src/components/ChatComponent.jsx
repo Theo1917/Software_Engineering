@@ -174,7 +174,7 @@ export default function ChatComponent({ taskId, userId, userName }) {
   };
 
   return (
-    <Card className="flex flex-col h-96 border border-white/10 rounded-lg bg-surface/80">
+    <Card className="flex flex-col h-96 border border-white/10 rounded-lg bg-surface/80 shadow-2xl">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
@@ -207,7 +207,7 @@ export default function ChatComponent({ taskId, userId, userName }) {
       {/* Input Area */}
       <div className="border-t border-white/10 p-4 bg-obsidian/90">
         {replyToMessageId && (
-          <div className="mb-2 flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-xs text-neon">
+          <div className="mb-2 flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-xs text-text">
             <span>Replying to message #{replyToMessageId}</span>
             <Button type="button" variant="ghost" onClick={() => setReplyToMessageId(null)} className="font-semibold">
               Cancel reply
@@ -227,11 +227,11 @@ export default function ChatComponent({ taskId, userId, userName }) {
               if (e.key === "Enter") handleSendMessage();
             }}
             placeholder="Type your message..."
-            className="flex-1 px-3 py-2 border border-white/10 rounded-lg text-sm bg-surface/80 text-text focus:outline-none focus:ring-2 focus:ring-neon/50"
+            className="flex-1 px-3 py-2 border border-white/10 rounded-lg text-sm bg-surface/80 text-text focus:outline-none focus:ring-2 focus:ring-white/50"
           />
           <Button
             onClick={handleSendMessage}
-            className="px-4 py-2 bg-neon text-obsidian rounded-lg text-sm hover:bg-neon/90 transition"
+            className="px-4 py-2 rounded-lg text-sm transition"
           >
             Send
           </Button>
@@ -255,19 +255,19 @@ function MessageBubble({ msg, userId, onReply, onShowAttachment }) {
   return (
     <div className={`space-y-2 ${isMine ? "text-right" : "text-left"}`}>
       <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-        <div className={`max-w-xs rounded-lg px-3 py-2 ${isMine ? "bg-neon/15 text-text border border-neon/25" : "bg-white/5 text-text border border-white/10"}`}>
+        <div className={`max-w-xs rounded-lg px-3 py-2 ${isMine ? "bg-white/10 text-text border border-white/15" : "bg-white/5 text-text border border-white/10"}`}>
           <p className="text-xs font-semibold">{msg.userName || msg.sender_name}</p>
           {msg.message && <p className="text-sm">{msg.message}</p>}
           {msg.content && <p className="text-sm">{msg.content}</p>}
           {msg.file_url && (
-            <button type="button" onClick={onShowAttachment} className="mt-2 text-xs font-semibold text-neon underline">
+            <button type="button" onClick={onShowAttachment} className="mt-2 text-xs font-semibold text-text underline">
               Open attachment
             </button>
           )}
           <p className="mt-1 text-xs text-muted">
             {new Date(msg.timestamp || msg.created_at).toLocaleTimeString()}
           </p>
-          {isMine && Number(msg.read_count || 0) > 0 && <p className="text-[11px] text-neon">Read</p>}
+          {isMine && Number(msg.read_count || 0) > 0 && <p className="text-[11px] text-text">Read</p>}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/Card";
@@ -16,6 +17,7 @@ const categories = ["Web Development", "AI", "Cloud", "Security", "Mobile", "Dev
 
 export default function DiscussionsPage() {
   const { isAuthenticated } = useAuth();
+  const { postId } = useParams();
   const [posts, setPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
   const [recommendedPosts, setRecommendedPosts] = useState([]);
@@ -33,6 +35,12 @@ export default function DiscussionsPage() {
     fetchDiscoveryLists();
   }, []);
 
+  useEffect(() => {
+    if (postId) {
+      viewPost(postId);
+    }
+  }, [postId]);
+
   async function fetchPosts(nextSearch = search) {
     try {
       const params = {};
@@ -45,6 +53,11 @@ export default function DiscussionsPage() {
     } catch (apiError) {
       setError(apiError.response?.data?.message || "Unable to load discussions");
     }
+  }
+
+  function handleSearchSubmit(event) {
+    event.preventDefault();
+    fetchPosts(search);
   }
 
   async function fetchDiscoveryLists() {
@@ -183,26 +196,26 @@ export default function DiscussionsPage() {
               <h2 className="text-lg font-semibold">Discover Posts</h2>
               <p className="text-sm text-text/60 mt-1">Search posts by title, content, or tags.</p>
             </div>
-              <Button
+            <Button
               type="button"
               className="btn-secondary"
               onClick={() => {
                 setSearch("");
                 fetchPosts("");
               }}
-              >
-                Reset
-              </Button>
+            >
+              Reset
+            </Button>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <form onSubmit={handleSearchSubmit} className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <input
               className="input"
               placeholder="Search posts"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
-              <Button type="button" onClick={fetchPosts}>Search</Button>
-          </div>
+            <Button type="submit">Search</Button>
+          </form>
         </div>
 
         {isAuthenticated && (
@@ -485,13 +498,13 @@ function CommentNode({
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => onVote(comment.id, "UP") }>
-            👍 Upvote
+            Upvote
           </Button>
           <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => onVote(comment.id, "DOWN") }>
-            👎 Downvote
+            Downvote
           </Button>
           <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}>
-            💬 Reply
+            Reply
           </Button>
         </div>
       </article>

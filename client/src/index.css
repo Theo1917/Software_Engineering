@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --color-ink: #E6EDF3;
-  --color-neon: #00F5A0;
-  --color-cyan: #00C2FF;
-  --color-pink: #FF3366;
-  --color-violet: #7C3AED;
-  --bg-900: #071123;
-  --bg-800: #0f1724;
-  --surface: rgba(255,255,255,0.03);
-  --muted: #98A0B3;
+  --color-ink: #F5F5F5;
+  --color-neon: #FFFFFF;
+  --color-cyan: #D1D5DB;
+  --color-pink: #E5E7EB;
+  --color-violet: #9CA3AF;
+  --bg-900: #000000;
+  --bg-800: #0A0A0A;
+  --surface: rgba(255,255,255,0.04);
+  --muted: #A1A1AA;
   color-scheme: dark;
   color: var(--color-ink);
   background:
-    radial-gradient(circle at 10% 12%, rgba(0, 245, 160, 0.12), transparent 26%),
-    radial-gradient(circle at 88% 8%, rgba(255, 51, 102, 0.12), transparent 22%),
-    radial-gradient(circle at 50% 100%, rgba(14, 17, 23, 0.95), rgba(13, 17, 23, 1) 56%);
+    radial-gradient(circle at 10% 12%, rgba(255, 255, 255, 0.08), transparent 26%),
+    radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.06), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(10, 10, 10, 0.98), rgba(0, 0, 0, 1) 56%);
 }
 
 * {
@@ -27,7 +27,7 @@
 }
 
 html {
-  background: #0D1117;
+  background: #000;
   scroll-behavior: smooth;
 }
 
@@ -36,17 +36,18 @@ body {
   min-height: 100vh;
   font-family: "Space Grotesk", sans-serif;
   background:
-    radial-gradient(circle at 12% 14%, rgba(0, 255, 102, 0.12), transparent 24%),
-    radial-gradient(circle at 88% 10%, rgba(255, 51, 102, 0.14), transparent 20%),
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 32%),
-    linear-gradient(180deg, #0D1117 0%, #0B1016 100%);
+    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.08), transparent 24%),
+    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.1), transparent 20%),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05), transparent 32%),
+    linear-gradient(180deg, #000000 0%, #090909 100%);
   color: #E6EDF3;
   letter-spacing: 0.01em;
+  filter: grayscale(1);
 }
 
 ::selection {
-  background: rgba(0, 255, 102, 0.28);
-  color: #0D1117;
+  background: rgba(255, 255, 255, 0.28);
+  color: #000;
 }
 
 a {
@@ -63,7 +64,7 @@ body::before {
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: radial-gradient(circle at center, black 55%, transparent 100%);
-  opacity: 0.22;
+  opacity: 0.18;
 }
 
 #root {
